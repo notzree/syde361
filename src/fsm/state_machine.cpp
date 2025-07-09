@@ -3,6 +3,8 @@
 #include "esp32-hal.h"
 #include "fsm/belt_states.h"
 #include <Arduino.h>
+#include <memory>
+#include <utility>
 
 BeltFSM::BeltFSM(
     std::unique_ptr<SensorManager> sensorManager,

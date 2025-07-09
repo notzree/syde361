@@ -11,6 +11,9 @@
 #include "sensors/force_sensor.h"
 #include "feedback/vibration_motor.h"
 
+#include <memory>
+#include <utility>
+
 // --- Configuration ---
 // Define the pins for your hardware
 #define FSR_PIN_FRONT A0
@@ -29,18 +32,20 @@ void setup() {
 
   // 1. Create the managers
   // These will hold and manage the individual components.
-  auto sensorManager = std::make_unique<SensorManager>();
-  auto feedbackManager = std::make_unique<FeedbackManager>();
-  auto inputManager = std::make_unique<InputManager>();
+  auto sensorManager = std::unique_ptr<SensorManager>(new SensorManager());
+  auto feedbackManager = std::unique_ptr<FeedbackManager>(new FeedbackManager());
+  
+  auto inputManager = std::unique_ptr<InputManager>(new InputManager());
   
   // 2. Create and add concrete SENSORS to the SensorManager
   // You can add as many sensors as you need.
-  sensorManager->addSensor(std::make_unique<ForceSensor>("front_fsr", FSR_PIN_FRONT));
-  sensorManager->addSensor(std::make_unique<ForceSensor>("back_fsr", FSR_PIN_BACK));
+  // 2. Create and add concrete SENSORS to the SensorManager
+  sensorManager->addSensor(std::unique_ptr<ForceSensor>(new ForceSensor("front_fsr", FSR_PIN_FRONT)));
+  sensorManager->addSensor(std::unique_ptr<ForceSensor>(new ForceSensor("back_fsr",  FSR_PIN_BACK)));
   Serial.println("Sensors created and added.");
 
   // 3. Create and add concrete MOTORS to the FeedbackManager
-  feedbackManager->addMotor(std::make_unique<VibrationMotor>("main_buzzer", MOTOR_PIN_1));
+  feedbackManager->addMotor(std::unique_ptr<VibrationMotor>(new VibrationMotor("main_buzzer", MOTOR_PIN_1)));
   Serial.println("Feedback motors created and added.");
 
   // 4. Create and add concrete INPUTS to the InputManager
@@ -48,13 +53,16 @@ void setup() {
   Serial.println("Inputs created and added.");
 
   // 5. Create the State Machine (BeltFSM)
-  // This is the core of your application. We "inject" the managers into it.
-  // std::move transfers ownership of the managers to the FSM.
-  beltFsm = std::make_unique<BeltFSM>(
-      std::move(sensorManager),
-      std::move(feedbackManager),
-      std::move(inputManager)
+  //    We still move the managers into the FSM, but build it with new
+  beltFsm = std::unique_ptr<BeltFSM>(
+      new BeltFSM(
+        std::move(sensorManager),
+        std::move(feedbackManager),
+        std::move(inputManager)
+      )
   );
+  Serial.println("BeltFSM created. Initializing...");
+
   Serial.println("BeltFSM created. Initializing...");
 
   // 6. Initialize the FSM
