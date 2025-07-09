@@ -2,7 +2,7 @@
 #include "belt_states.h"
 #include "belt_events.h"
 #include "../sensors/sensor_manager.h"
-// #include "../connectivity/connectivity_manager.h"
+#include "../input/input_manager.h"  // Add this include
 #include "../feedback/feedback_manager.h"
 #include <memory>
 #include <functional>
@@ -14,7 +14,8 @@ public:
     
     explicit BeltFSM(
         std::unique_ptr<SensorManager> sensorManager,
-        std::unique_ptr<FeedbackManager> feedbackManager
+        std::unique_ptr<FeedbackManager> feedbackManager,
+        std::unique_ptr<InputManager> inputManager  // Add this parameter
     );
     
     ~BeltFSM() = default;
@@ -45,29 +46,20 @@ private:
     
     // State handlers
     void handleStartupState(BeltEvent event);
-    void handlePairingState(BeltEvent event);
     void handleCalibrationState(BeltEvent event);
-    void handleCalibratingBaselineState(BeltEvent event);
-    void handleCalibratingBraceState(BeltEvent event);
     void handleReadyState(BeltEvent event);
-    void handleMonitoringState(BeltEvent event);
     void handleFeedbackGoodState(BeltEvent event);
     void handleFeedbackPoorState(BeltEvent event);
-    void handleSleepState(BeltEvent event);
     void handleErrorState(BeltEvent event);
     
     // Analysis methods
-    bool isLiftStarted() const;
-    bool isLiftComplete() const;
     bool isGoodBraceDetected() const;
     bool isPoorBraceDetected() const;
-    bool isActivityDetected() const;
+    bool isLiftComplete() const;
     
     // Calibration methods
-    void startBaselineCalibration();
-    void startBraceCalibration();
-    bool isBaselineComplete() const;
-    bool isBraceCalibrationComplete() const;
+    void startCalibration();
+    void isCalibrated();
     
     // Member variables
     BeltState currentState_;
@@ -76,7 +68,7 @@ private:
     
     // Components (injected dependencies)
     std::unique_ptr<SensorManager> sensorManager_;
-    // std::unique_ptr<ConnectivityManager> connectivityManager_;
+    std::unique_ptr<InputManager> inputManager_;  // Add this member
     std::unique_ptr<FeedbackManager> feedbackManager_;
     
     // Callbacks

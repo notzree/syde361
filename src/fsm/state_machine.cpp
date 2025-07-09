@@ -6,11 +6,13 @@
 
 BeltFSM::BeltFSM(
     std::unique_ptr<SensorManager> sensorManager,
-    std::unique_ptr<FeedbackManager> feedbackManager
+    std::unique_ptr<FeedbackManager> feedbackManager,
+    std::unique_ptr<InputManager> inputManager  // Add this parameter
 ): currentState_(BeltState::STARTUP),
    stateEntryTime_(0),
    lastActivity_(0),
    sensorManager_(std::move(sensorManager)),
+   inputManager_(std::move(inputManager)),  // Add this initialization
    feedbackManager_(std::move(feedbackManager)),
    stateChangeCallback_(nullptr),
    baselineData_(),
@@ -19,14 +21,20 @@ BeltFSM::BeltFSM(
    lastEventCheck_(0) {
 }
 
-
 bool BeltFSM::initialize(){
     Serial.println("attempting to initialize belt fsm...");
+    
     if (!sensorManager_->initializeAll()){
         Serial.println("failed to initialize sensors!");
         return false;
     }
-    if (!sensorManager_->initializeAll()){
+    
+    if (!inputManager_->initialize()){  // Add input manager initialization
+        Serial.println("failed to initialize input manager!");
+        return false;
+    }
+    
+    if (!feedbackManager_->initializeAll()){  // Fixed the duplicate sensor initialization
         Serial.println("failed to initialize motors!");
         return false;
     }
@@ -36,6 +44,7 @@ bool BeltFSM::initialize(){
         // Handle sensor events
         this->lastActivity_ = millis();
     });
+    
     currentState_ = BeltState::STARTUP;
     stateEntryTime_ = millis();
     Serial.println("belt fsm successfully initialized");
@@ -68,8 +77,13 @@ void BeltFSM::transitionTo(BeltState newState) {
     enterState(newState);
 }
 
-
 BeltEvent BeltFSM::checkForEvents() {
+    // Check for button events first (highest priority)
+    if (inputManager_->isButtonPressed("main_button")) {
+        inputManager_->clearButtonPress("main_button");
+        return BeltEvent::BUTTON_PRESSED;
+    }
+    
     // Check if sensors are healthy
     if (!sensorManager_->areAllSensorsHealthy()) {
         return BeltEvent::SENSOR_FAILURE;
@@ -82,12 +96,6 @@ BeltEvent BeltFSM::checkForEvents() {
             return BeltEvent::SENSORS_INITIALIZED;
             
         case BeltState::READY:
-            if (isLiftStarted()) {
-                return BeltEvent::LIFT_STARTED;
-            }
-            break;
-            
-        case BeltState::MONITORING:
             if (isGoodBraceDetected()) {
                 return BeltEvent::GOOD_BRACE_DETECTED;
             }
@@ -95,7 +103,7 @@ BeltEvent BeltFSM::checkForEvents() {
                 return BeltEvent::POOR_BRACE_DETECTED;
             }
             if (isLiftComplete()) {
-                return BeltEvent::LIFT_COMPLETE;
+                return BeltEvent::FEEDBACK_COMPLETE;
             }
             break;
             
@@ -111,7 +119,7 @@ void BeltFSM::update() {
     
     // Update subsystems
     sensorManager_->updateAll();
-    // connectivityManager_->update();
+    inputManager_->update();  // Add input manager update
     
     // Check for events periodically
     if (currentTime - lastEventCheck_ >= 50) { // 20Hz event checking
@@ -124,4 +132,93 @@ void BeltFSM::update() {
     
     // // Handle timeout events
     // checkTimeouts(currentTime);
+}
+
+bool BeltFSM::isLiftComplete() const {
+    // For now, return false as a placeholder
+    // This should be implemented based on your specific lift completion logic
+    return false;
+}
+
+bool BeltFSM::isGoodBraceDetected() const {
+    // For now, return false as a placeholder
+    // This should be implemented based on your sensor data analysis
+    return false;
+}
+
+bool BeltFSM::isPoorBraceDetected() const {
+    // For now, return false as a placeholder
+    // This should be implemented based on your sensor data analysis
+    return false;
+}
+
+void BeltFSM::enterState(BeltState state) {
+    // State entry logic can be added here
+    Serial.print("Entering state: ");
+    Serial.println(stateToString(state));
+}
+
+void BeltFSM::exitState(BeltState state) {
+    // State exit logic can be added here
+    Serial.print("Exiting state: ");
+    Serial.println(stateToString(state));
+}
+
+void BeltFSM::handleEvent(BeltEvent event) {
+    // Handle events based on current state
+    switch (currentState_) {
+        case BeltState::STARTUP:
+            handleStartupState(event);
+            break;
+        case BeltState::READY:
+            handleReadyState(event);
+            break;
+        default:
+            // Handle other states as needed
+            break;
+    }
+}
+
+void BeltFSM::handleStartupState(BeltEvent event) {
+    if (event == BeltEvent::SENSORS_INITIALIZED) {
+        transitionTo(BeltState::READY);
+    }
+}
+
+void BeltFSM::handleReadyState(BeltEvent event) {
+    switch (event) {
+        case BeltEvent::GOOD_BRACE_DETECTED:
+            // Handle good brace detection
+            break;
+        case BeltEvent::POOR_BRACE_DETECTED:
+            // Handle poor brace detection
+            break;
+        case BeltEvent::BUTTON_PRESSED:
+            // Handle button press
+            break;
+        default:
+            break;
+    }
+}
+
+void BeltFSM::startCalibration() {
+    // Implementation for starting calibration
+    Serial.println("Starting calibration...");
+}
+
+void BeltFSM::isCalibrated() {
+    // Implementation for checking if calibrated
+    Serial.println("Checking calibration status...");
+}
+
+unsigned long BeltFSM::getStateTime() const {
+    return millis() - stateEntryTime_;
+}
+
+void BeltFSM::setStateChangeCallback(StateChangeCallback callback) {
+    stateChangeCallback_ = callback;
+}
+
+void BeltFSM::forceTransition(BeltState newState) {
+    transitionTo(newState);
 }
