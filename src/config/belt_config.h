@@ -20,7 +20,7 @@ namespace BeltConfig {
     constexpr int BRACE_SAMPLES = 50;
     constexpr float BRACE_THRESHOLD = 0.8f;
     
-    // Bluetooth
-    constexpr char DEVICE_NAME[] = "SmartBelt";
-    constexpr char SERVICE_UUID[] = "12345678-1234-1234-1234-123456789abc";
+    // // Bluetooth
+    // constexpr char DEVICE_NAME[] = "SmartBelt";
+    // constexpr char SERVICE_UUID[] = "12345678-1234-1234-1234-123456789abc";
 }

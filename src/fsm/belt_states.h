@@ -2,15 +2,17 @@
 
 enum class BeltState {
     STARTUP,
+    // pairing is for sensors
     PAIRING,
-    CALIBRATION,
-    CALIBRATING_BASELINE,
-    CALIBRATING_BRACE,
+    // start calibration
+    // calibrate baseline -> back to calibrating
+    // calibrating -> calibrate brace
+    CALIBRATING, 
+    // Ready state to give feedback
+    //
     READY,
-    MONITORING,
     FEEDBACK_GOOD,
     FEEDBACK_POOR,
-    SLEEP,
     ERROR
 };
 
