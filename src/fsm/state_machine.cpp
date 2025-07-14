@@ -1,20 +1,21 @@
-#include "state_machine.h"
+#include "fsm/state_machine.h"
 #include "../config/belt_config.h"
 #include "esp32-hal.h"
 #include "fsm/belt_states.h"
+#include "sensors/sensor_manager.h"
 #include <Arduino.h>
 #include <memory>
 #include <utility>
 
 BeltFSM::BeltFSM(
-    std::unique_ptr<SensorManager> sensorManager,
+    std::unique_ptr<SimpleSensorManager> sensorManager,
     std::unique_ptr<FeedbackManager> feedbackManager,
-    std::unique_ptr<InputManager> inputManager  // Add this parameter
+    std::unique_ptr<InputManager> inputManager
 ): currentState_(BeltState::STARTUP),
    stateEntryTime_(0),
    lastActivity_(0),
    sensorManager_(std::move(sensorManager)),
-   inputManager_(std::move(inputManager)),  // Add this initialization
+   inputManager_(std::move(inputManager)),
    feedbackManager_(std::move(feedbackManager)),
    stateChangeCallback_(nullptr),
    baselineData_(),
@@ -31,12 +32,12 @@ bool BeltFSM::initialize(){
         return false;
     }
     
-    if (!inputManager_->initialize()){  // Add input manager initialization
+    if (!inputManager_->initialize()){
         Serial.println("failed to initialize input manager!");
         return false;
     }
     
-    if (!feedbackManager_->initializeAll()){  // Fixed the duplicate sensor initialization
+    if (!feedbackManager_->initializeAll()){
         Serial.println("failed to initialize motors!");
         return false;
     }
@@ -121,7 +122,7 @@ void BeltFSM::update() {
     
     // Update subsystems
     sensorManager_->updateAll();
-    inputManager_->update();  // Add input manager update
+    inputManager_->update();
     
     // Check for events periodically
     if (currentTime - lastEventCheck_ >= 50) { // 20Hz event checking

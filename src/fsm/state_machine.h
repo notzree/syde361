@@ -13,7 +13,7 @@ public:
     using StateChangeCallback = std::function<void(BeltState, BeltState)>;
     
     explicit BeltFSM(
-        std::unique_ptr<SensorManager> sensorManager,
+        std::unique_ptr<SimpleSensorManager> sensorManager,
         std::unique_ptr<FeedbackManager> feedbackManager,
         std::unique_ptr<InputManager> inputManager  // Add this parameter
     );
@@ -67,7 +67,7 @@ private:
     unsigned long lastActivity_;
     
     // Components (injected dependencies)
-    std::unique_ptr<SensorManager> sensorManager_;
+    std::unique_ptr<SimpleSensorManager> sensorManager_;
     std::unique_ptr<InputManager> inputManager_;  // Add this member
     std::unique_ptr<FeedbackManager> feedbackManager_;
     

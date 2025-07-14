@@ -1,32 +1,51 @@
 #pragma once
 #include "sensor_interface.h"
-#include <memory>
-#include <vector>
+#include "sensors/imu_sensor.h"
+#include "fsr_sensor.h"
 #include <functional>
-#include <cstring>
 
-class SensorManager {
+// Generic sensor data structure
+struct SensorData {
+    bool valid;
+    unsigned long timestamp;
+    
+    SensorData() : valid(false), timestamp(0) {}
+};
+
+class SimpleSensorManager {
+private:
+    static const int MAX_SENSORS = 10;  // Enough for multiple sensors
+    Sensor* sensors_[MAX_SENSORS];
+    int sensorCount_;
+    unsigned long lastUpdate_;
+
 public:
-    using SensorEventCallback = std::function<void(const char*, const SensorData&)>;
-    
-    SensorManager() = default;
-    ~SensorManager() = default;
-    
+    SimpleSensorManager();
+
     // Sensor management
-    void addSensor(std::unique_ptr<ISensor> sensor);
+    bool addSensor(Sensor* sensor);
     bool initializeAll();
     void updateAll();
-    
+
     // Data access
-    SensorData getSensorData(const char* sensorName) const;
-    std::vector<SensorData> getAllSensorData() const;
-    bool areAllSensorsHealthy() const;
+    bool areAllSensorsReady() const;
+    Sensor* getSensor(const char* name) const;
+    int getSensorCount() const;
+    Sensor* getSensorByIndex(int index) const;
+
+    // Type-specific access
+    int getSensorsOfType(const char* typePrefix, Sensor** resultArray, int maxResults) const;
+    int getAllFSRSensors(FSRSensor** fsrArray, int maxResults) const;
+    int getAllIMUSensors(MPU6050** imuArray, int maxResults) const;
+
+    // Utility functions
+    void printStatus() const;
+    void printAllSensorData() const;
     
-    // Event handling
+    // Event callback system
+    using SensorEventCallback = std::function<void(const char*, const SensorData&)>;
     void setEventCallback(SensorEventCallback callback);
     
-private:
-    std::vector<std::unique_ptr<ISensor>> sensors_;
-    SensorEventCallback eventCallback_;
-    unsigned long lastUpdate_;
+    // Health checking
+    bool areAllSensorsHealthy() const;
 };
