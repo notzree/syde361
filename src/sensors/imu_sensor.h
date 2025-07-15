@@ -1,44 +1,38 @@
-#pragma once
-#include <Arduino.h>
-#include <math.h>
-#include "sensor_interface.h"
+// sensors/imu_sensor.h
+#ifndef IMU_SENSOR_H
+#define IMU_SENSOR_H
 
-// Simple structure for IMU data
+#include "sensors/sensor_interface.h"
+#include <Arduino.h>
+#include <Adafruit_MPU6050.h>
+
 struct IMUData {
-    float accelX, accelY, accelZ;  // g-force
-    float gyroX, gyroY, gyroZ;     // degrees/second
-    float temperature;             // Celsius
-    unsigned long timestamp;
-    bool valid;
-    
-    IMUData() : accelX(0), accelY(0), accelZ(0), 
-                gyroX(0), gyroY(0), gyroZ(0), 
-                temperature(0), timestamp(0), valid(false) {}
+    float accelX, accelY, accelZ;    // in g-force
+    float gyroX, gyroY, gyroZ;       // in degrees/s
+    float temperature;               // in Celsius
+    unsigned long timestamp;         // in milliseconds
+    bool valid;                      // data validity flag
 };
 
-// MPU6050 IMU Sensor
-class MPU6050 : public Sensor {
-private:
-    static const uint8_t MPU6050_ADDRESS = 0x68;
-    static const uint8_t PWR_MGMT_1 = 0x6B;
-    static const uint8_t ACCEL_XOUT_H = 0x3B;
-    
-    const char* name_;
-    IMUData data_;
-    bool initialized_;
-
+class MPU6050Sensor : public Sensor{
 public:
-    MPU6050(const char* name = "MPU6050");
-
-    bool begin() override;
-    bool update() override;
-    bool isReady() const override;
-    const char* getName() const override;
-
-    IMUData getData() const;
+    MPU6050Sensor(const char* name);
     
-    // Helper functions for common calculations
+    bool begin();
+    bool update();
+    bool isReady() const;
+    const char* getName() const;
+    
+    IMUData getData() const;
     float getAccelMagnitude() const;
     float getRoll() const;
     float getPitch() const;
+
+private:
+    Adafruit_MPU6050 mpu_;
+    const char* name_;
+    bool initialized_;
+    IMUData data_;
 };
+
+#endif // IMU_SENSOR_H

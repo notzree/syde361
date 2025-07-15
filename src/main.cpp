@@ -89,85 +89,149 @@
 //   delay(10); 
 // }
 
-// TESTING
+// // TESTING
+// #include "sensors/imu_sensor.h"
+// #include "sensors/fsr_sensor.h"
+
+// // Create sensor instances
+// MPU6050Sensor imu("IMU");
+// FSRSensor forceSensor("FSR", A0);  // FSR connected to analog pin A0
+
+// void setup() {
+//     Serial.begin(115200);
+//     while (!Serial){
+//         delay(10);
+//     }
+    
+//     Serial.println("=== Starting sensors ===");
+    
+//     // Initialize IMU with detailed feedback
+//     Serial.println("Attempting to initialize IMU...");
+//     bool imuResult = imu.begin();
+    
+//     if (imuResult) {
+//         Serial.println("✓ IMU initialized successfully");
+//     } else {
+//         Serial.println("✗ IMU initialization FAILED!");
+//         Serial.println("Check the debug output above for details.");
+//         Serial.println("Halting execution - fix the IMU issue first.");
+//         Serial.println("Common issues:");
+//         Serial.println("  - Check wiring (SDA/SCL/VCC/GND)");
+//         Serial.println("  - Verify pin numbers in config");
+//         Serial.println("  - Ensure 3.3V power supply");
+//         Serial.println("  - Try different I2C pins");
+        
+//         // Halt here so you can read the logs
+//         while (true) {
+//             delay(1000);
+//             Serial.println("IMU initialization failed - system halted");
+//         }
+//     }
+    
+//     // Only continue if IMU works
+//     Serial.println("Attempting to initialize FSR...");
+//     if (forceSensor.begin()) {
+//         Serial.println("✓ Force sensor initialized successfully");
+//     } else {
+//         Serial.println("✗ Force sensor initialization failed!");
+//         // FSR failure is less critical, continue anyway
+//     }
+    
+//     Serial.println("=== Initialization complete ===");
+//     Serial.println("Starting main loop...");
+//     delay(1000);
+// }
+
+// void loop() {
+//     // Update both sensors
+//     imu.update();
+//     forceSensor.update();
+    
+//     // Print IMU data
+//     if (imu.isReady()) {
+//         IMUData imuData = imu.getData();
+        
+//         Serial.print("IMU - Accel: (");
+//         Serial.print(imuData.accelX, 2);
+//         Serial.print(", ");
+//         Serial.print(imuData.accelY, 2);
+//         Serial.print(", ");
+//         Serial.print(imuData.accelZ, 2);
+//         Serial.print(") g | Gyro: (");
+//         Serial.print(imuData.gyroX, 1);
+//         Serial.print(", ");
+//         Serial.print(imuData.gyroY, 1);
+//         Serial.print(", ");
+//         Serial.print(imuData.gyroZ, 1);
+//         Serial.print(") °/s | Roll: ");
+//         Serial.print(imu.getRoll(), 1);
+//         Serial.print("° | Pitch: ");
+//         Serial.print(imu.getPitch(), 1);
+//         Serial.print("° | Temp: ");
+//         Serial.print(imuData.temperature, 1);
+//         Serial.print("°C");
+//     } else {
+//         Serial.print("IMU not ready");
+//     }
+    
+//     Serial.print(" | ");
+    
+//     // Print FSR data
+//     if (forceSensor.isReady()) {
+//         FSRData fsrData = forceSensor.getData();
+        
+//         Serial.print("Force: ");
+//         Serial.print(fsrData.force, 3);
+//         Serial.print(" (");
+//         Serial.print(fsrData.rawValue);
+//         Serial.print(")");
+        
+//         if (forceSensor.isPressed()) {
+//             Serial.print(" [PRESSED]");
+//         }
+//     } else {
+//         Serial.print("FSR not ready");
+//     }
+    
+//     Serial.println();
+//     delay(500); // Slower updates for easier reading
+// }
+
+#include <Arduino.h>
+#include "sensors/sensor_manager.h"
 #include "sensors/imu_sensor.h"
 #include "sensors/fsr_sensor.h"
-// Create sensor instances
-MPU6050 imu("IMU");
-FSRSensor forceSensor("FSR", A0);  // FSR connected to analog pin A0
+
+// Pin definitions (adjust as needed)
+#define IMU_NAME "IMU"
+#define FSR_NAME "FSR"
+#define FSR_PIN A0
+
+SimpleSensorManager sensorManager;
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Starting sensors...");
-    
-    // Initialize IMU
-    if (imu.begin()) {
-        Serial.println("IMU initialized successfully");
+    delay(2000); // Wait for Serial to connect
+    Serial.println("=== SensorManager Test ===");
+
+    // Create sensors
+    MPU6050Sensor* imu = new MPU6050Sensor(IMU_NAME);
+    FSRSensor* fsr = new FSRSensor(FSR_NAME, FSR_PIN);
+
+    // Add sensors to manager
+    sensorManager.addSensor(imu);
+    sensorManager.addSensor(fsr);
+
+    // Initialize all sensors
+    if (sensorManager.initializeAll()) {
+        Serial.println("All sensors initialized successfully.");
     } else {
-        Serial.println("IMU initialization failed!");
+        Serial.println("Sensor initialization failed!");
     }
-    
-    // Initialize FSR
-    if (forceSensor.begin()) {
-        Serial.println("Force sensor initialized successfully");
-    } else {
-        Serial.println("Force sensor initialization failed!");
-    }
-    
-    delay(1000);
 }
 
 void loop() {
-    // Update both sensors
-    imu.update();
-    forceSensor.update();
-    
-    // Print IMU data
-    if (imu.isReady()) {
-        IMUData imuData = imu.getData();
-        
-        Serial.print("IMU - Accel: (");
-        Serial.print(imuData.accelX, 2);
-        Serial.print(", ");
-        Serial.print(imuData.accelY, 2);
-        Serial.print(", ");
-        Serial.print(imuData.accelZ, 2);
-        Serial.print(") g | Gyro: (");
-        Serial.print(imuData.gyroX, 1);
-        Serial.print(", ");
-        Serial.print(imuData.gyroY, 1);
-        Serial.print(", ");
-        Serial.print(imuData.gyroZ, 1);
-        Serial.print(") °/s | Roll: ");
-        Serial.print(imu.getRoll(), 1);
-        Serial.print("° | Pitch: ");
-        Serial.print(imu.getPitch(), 1);
-        Serial.print("° | Temp: ");
-        Serial.print(imuData.temperature, 1);
-        Serial.print("°C");
-    } else {
-        Serial.print("IMU not ready");
-    }
-    
-    Serial.print(" | ");
-    
-    // Print FSR data
-    if (forceSensor.isReady()) {
-        FSRData fsrData = forceSensor.getData();
-        
-        Serial.print("Force: ");
-        Serial.print(fsrData.force, 3);
-        Serial.print(" (");
-        Serial.print(fsrData.rawValue);
-        Serial.print(")");
-        
-        if (forceSensor.isPressed()) {
-            Serial.print(" [PRESSED]");
-        }
-    } else {
-        Serial.print("FSR not ready");
-    }
-    
-    Serial.println();
-    delay(100);
-}
+    sensorManager.updateAll();
+    sensorManager.printAllSensorData();
+    delay(1000); // Print every second
+} 

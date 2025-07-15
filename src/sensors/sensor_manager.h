@@ -36,7 +36,7 @@ public:
     // Type-specific access
     int getSensorsOfType(const char* typePrefix, Sensor** resultArray, int maxResults) const;
     int getAllFSRSensors(FSRSensor** fsrArray, int maxResults) const;
-    int getAllIMUSensors(MPU6050** imuArray, int maxResults) const;
+    int getAllIMUSensors(MPU6050Sensor** imuArray, int maxResults) const;
 
     // Utility functions
     void printStatus() const;

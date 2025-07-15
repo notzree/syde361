@@ -1,4 +1,6 @@
 #include "sensors/sensor_manager.h"
+#include "sensors/imu_sensor.h"
+#include "sensors/sensor_interface.h"
 #include <Arduino.h>
 #include <string.h>
 
@@ -91,12 +93,12 @@ int SimpleSensorManager::getAllFSRSensors(FSRSensor** fsrArray, int maxResults) 
     return found;
 }
 
-int SimpleSensorManager::getAllIMUSensors(MPU6050** imuArray, int maxResults) const {
+int SimpleSensorManager::getAllIMUSensors(MPU6050Sensor** imuArray, int maxResults) const {
     int found = 0;
     for (int i = 0; i < sensorCount_ && found < maxResults; i++) {
         // Check if this sensor's name contains "IMU"
         if (strstr(sensors_[i]->getName(), "IMU") != nullptr) {
-            imuArray[found] = static_cast<MPU6050*>(sensors_[i]);
+            imuArray[found] = static_cast<MPU6050Sensor*>(sensors_[i]);
             found++;
         }
     }
@@ -140,7 +142,7 @@ void SimpleSensorManager::printAllSensorData() const {
     }
     
     // Print all IMU data
-    MPU6050* imuSensors[5];  // Max 5 IMU sensors
+    MPU6050Sensor* imuSensors[5];  // Max 5 IMU sensors
     int imuCount = getAllIMUSensors(imuSensors, 5);
     if (imuCount > 0) {
         Serial.println("IMU Sensors:");

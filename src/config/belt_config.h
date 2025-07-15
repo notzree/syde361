@@ -4,8 +4,8 @@
 namespace BeltConfig {
     // Hardware pins
     constexpr int PRESSURE_SENSOR_PINS[] = {A0, A1, A2, A3, A4, A5, A6, A7};
-    constexpr int IMU_SDA_PIN = 21;
-    constexpr int IMU_SCL_PIN = 22;
+    constexpr int IMU_SDA_PIN = 11; // A4
+    constexpr int IMU_SCL_PIN = 12; // A5
     constexpr int LED_PIN = 2;
     constexpr int HAPTIC_PIN = 4;
     
