@@ -1,4 +1,3 @@
-#include <Arduino.h>
 // #include <memory> // Required for std::unique_ptr and std::make_unique
 
 // // Include your manager and FSM headers
@@ -89,149 +88,87 @@
 //   delay(10); 
 // }
 
-// // TESTING
-// #include "sensors/imu_sensor.h"
-// #include "sensors/fsr_sensor.h"
-
-// // Create sensor instances
-// MPU6050Sensor imu("IMU");
-// FSRSensor forceSensor("FSR", A0);  // FSR connected to analog pin A0
-
-// void setup() {
-//     Serial.begin(115200);
-//     while (!Serial){
-//         delay(10);
-//     }
-    
-//     Serial.println("=== Starting sensors ===");
-    
-//     // Initialize IMU with detailed feedback
-//     Serial.println("Attempting to initialize IMU...");
-//     bool imuResult = imu.begin();
-    
-//     if (imuResult) {
-//         Serial.println("✓ IMU initialized successfully");
-//     } else {
-//         Serial.println("✗ IMU initialization FAILED!");
-//         Serial.println("Check the debug output above for details.");
-//         Serial.println("Halting execution - fix the IMU issue first.");
-//         Serial.println("Common issues:");
-//         Serial.println("  - Check wiring (SDA/SCL/VCC/GND)");
-//         Serial.println("  - Verify pin numbers in config");
-//         Serial.println("  - Ensure 3.3V power supply");
-//         Serial.println("  - Try different I2C pins");
-        
-//         // Halt here so you can read the logs
-//         while (true) {
-//             delay(1000);
-//             Serial.println("IMU initialization failed - system halted");
-//         }
-//     }
-    
-//     // Only continue if IMU works
-//     Serial.println("Attempting to initialize FSR...");
-//     if (forceSensor.begin()) {
-//         Serial.println("✓ Force sensor initialized successfully");
-//     } else {
-//         Serial.println("✗ Force sensor initialization failed!");
-//         // FSR failure is less critical, continue anyway
-//     }
-    
-//     Serial.println("=== Initialization complete ===");
-//     Serial.println("Starting main loop...");
-//     delay(1000);
-// }
-
-// void loop() {
-//     // Update both sensors
-//     imu.update();
-//     forceSensor.update();
-    
-//     // Print IMU data
-//     if (imu.isReady()) {
-//         IMUData imuData = imu.getData();
-        
-//         Serial.print("IMU - Accel: (");
-//         Serial.print(imuData.accelX, 2);
-//         Serial.print(", ");
-//         Serial.print(imuData.accelY, 2);
-//         Serial.print(", ");
-//         Serial.print(imuData.accelZ, 2);
-//         Serial.print(") g | Gyro: (");
-//         Serial.print(imuData.gyroX, 1);
-//         Serial.print(", ");
-//         Serial.print(imuData.gyroY, 1);
-//         Serial.print(", ");
-//         Serial.print(imuData.gyroZ, 1);
-//         Serial.print(") °/s | Roll: ");
-//         Serial.print(imu.getRoll(), 1);
-//         Serial.print("° | Pitch: ");
-//         Serial.print(imu.getPitch(), 1);
-//         Serial.print("° | Temp: ");
-//         Serial.print(imuData.temperature, 1);
-//         Serial.print("°C");
-//     } else {
-//         Serial.print("IMU not ready");
-//     }
-    
-//     Serial.print(" | ");
-    
-//     // Print FSR data
-//     if (forceSensor.isReady()) {
-//         FSRData fsrData = forceSensor.getData();
-        
-//         Serial.print("Force: ");
-//         Serial.print(fsrData.force, 3);
-//         Serial.print(" (");
-//         Serial.print(fsrData.rawValue);
-//         Serial.print(")");
-        
-//         if (forceSensor.isPressed()) {
-//             Serial.print(" [PRESSED]");
-//         }
-//     } else {
-//         Serial.print("FSR not ready");
-//     }
-    
-//     Serial.println();
-//     delay(500); // Slower updates for easier reading
-// }
-
 #include <Arduino.h>
 #include "sensors/sensor_manager.h"
 #include "sensors/imu_sensor.h"
 #include "sensors/fsr_sensor.h"
+#include "feedback/feedback_manager.h"
+#include "feedback/vibration_motor.h"
+#include "fsm/state_machine.h"
+#include <memory>
+#include <utility>
 
 // Pin definitions (adjust as needed)
 #define IMU_NAME "IMU"
 #define FSR_NAME "FSR"
+#define VIBRATION_MOTOR_NAME "VIBRATION MOTOR"
 #define FSR_PIN A0
+#define VIBRATION_MOTOR_PIN 4
 
-SimpleSensorManager sensorManager;
+std::unique_ptr<BeltFSM> beltFsm;
+
+// SimpleSensorManager sensorManager;
+// FeedbackManager feedbackManager;
+
+const int powerPin = 4;
 
 void setup() {
     Serial.begin(115200);
+    Serial.println("=== Starting ===");
+
     delay(2000); // Wait for Serial to connect
     Serial.println("=== SensorManager Test ===");
+
+    // power pin setup
+    pinMode(powerPin, OUTPUT);
+    digitalWrite(powerPin, LOW);  // ensure it starts OFF (optional)
+
+    // managers
+    auto sensorManager = std::unique_ptr<SimpleSensorManager>(new SimpleSensorManager());
+    auto feedbackManager = std::unique_ptr<FeedbackManager>(new FeedbackManager());
+    auto inputManager = std::unique_ptr<InputManager>(new InputManager());
 
     // Create sensors
     MPU6050Sensor* imu = new MPU6050Sensor(IMU_NAME);
     FSRSensor* fsr = new FSRSensor(FSR_NAME, FSR_PIN);
-
+    VibrationMotor* vibrationMotor = new VibrationMotor(VIBRATION_MOTOR_NAME, VIBRATION_MOTOR_PIN);
+    
     // Add sensors to manager
-    sensorManager.addSensor(imu);
-    sensorManager.addSensor(fsr);
+    sensorManager->addSensor(imu);
+    sensorManager->addSensor(fsr);
+
+    beltFsm = std::unique_ptr<BeltFSM>(
+        new BeltFSM(
+            std::move(sensorManager),
+            std::move(feedbackManager),
+            std::move(inputManager)
+        )
+    );
 
     // Initialize all sensors
-    if (sensorManager.initializeAll()) {
+    if (sensorManager->initializeAll()) {
         Serial.println("All sensors initialized successfully.");
     } else {
         Serial.println("Sensor initialization failed!");
     }
+
 }
 
 void loop() {
-    sensorManager.updateAll();
-    sensorManager.printAllSensorData();
-    delay(1000); // Print every second
-} 
+    // 1) update and print your sensors
+    // sensorManager->updateAll();
+    // sensorManager->printAllSensorData();
+    // 2) turn ON D4
+    // digitalWrite(powerPin, HIGH);
+
+    // //if you want to blink instead of constant ON, uncomment:
+    // delay(1000);
+    // digitalWrite(powerPin, LOW);
+    // delay(1000);
+
+    // if (beltFsm) {
+    //     beltFsm->update();
+    // }
+    // beltFsm->forceTransition(BeltState::FEEDBACK_POOR);
+    delay(1000);
+}

@@ -2,6 +2,7 @@
 #include "motor_interface.h"
 #include <memory>
 #include <vector>
+
 class FeedbackManager {
     public:
         FeedbackManager() = default;
