@@ -1,5 +1,5 @@
 #include "vibration_motor.h"
-
+#include <Arduino.h>
 VibrationMotor::VibrationMotor(const char* name, int pin) 
     : name_(name), pin_(pin) {}
 

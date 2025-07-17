@@ -3,6 +3,7 @@
 #include "sensors/imu_sensor.h"
 #include "sensors/fsr_sensor.h"
 
+
 // Pin definitions (adjust as needed)
 #define IMU_NAME "IMU"
 #define FSR_NAME "FSR"
@@ -16,7 +17,7 @@ void setup() {
     Serial.println("=== SensorManager Test ===");
 
     // Create sensors
-    MPU6050* imu = new MPU6050(IMU_NAME);
+    MPU6050Sensor* imu = new MPU6050Sensor(IMU_NAME);
     FSRSensor* fsr = new FSRSensor(FSR_NAME, FSR_PIN);
 
     // Add sensors to manager

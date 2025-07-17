@@ -16,9 +16,8 @@ bool MPU6050Sensor::begin() {
     
     if (!mpu_.begin()) {
         Serial.println("Failed to find MPU6050 chip");
-        while (1) {
-            delay(10);
-        }
+        Serial.println("MPU6050Sensor: Initialization failed - returning false");
+        return false;
     }
     Serial.println(F("MPU6050Sensor: Found MPU6050!"));
     // Configure the sensor (matching the working demo)

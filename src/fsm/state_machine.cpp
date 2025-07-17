@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <memory>
 #include <utility>
+#include <iostream>
 
 BeltFSM::BeltFSM(
     std::unique_ptr<SimpleSensorManager> sensorManager,
@@ -103,6 +104,7 @@ BeltEvent BeltFSM::checkForEvents() {
                 return BeltEvent::GOOD_BRACE_DETECTED;
             }
             if (isPoorBraceDetected()) {
+                std::cout << "Poor brace detected";
                 return BeltEvent::POOR_BRACE_DETECTED;
             }
             if (isLiftComplete()) {
@@ -152,7 +154,7 @@ bool BeltFSM::isGoodBraceDetected() const {
 bool BeltFSM::isPoorBraceDetected() const {
     // For now, return false as a placeholder
     // This should be implemented based on your sensor data analysis
-    return false;
+    return true;
 }
 
 void BeltFSM::enterState(BeltState state) {
