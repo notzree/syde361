@@ -61,6 +61,9 @@ private:
     // Calibration methods
     void startCalibration();
     bool isCalibrationComplete();
+    void collectCalibrationSample();
+    void finishCalibration();
+
 
     void startFeedback(FeedbackPattern pattern);
     bool isFeedbackComplete();
@@ -92,4 +95,9 @@ private:
 
     // Timing
     unsigned long lastEventCheck_;
+
+    int calibrationSampleCount_;
+    bool isCollectingCalibration_;
+    int calibrationSums_[5];
+
 };

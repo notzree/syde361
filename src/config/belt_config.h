@@ -40,4 +40,8 @@ namespace BeltConfig {
     constexpr float BRACE_THRESHOLD = 0.8f;
     
     static const float MIN_ENGAGEMENT_PRESSURE = 30.0f;
+
+    // Need to update these, not sure if they make sense
+    constexpr int CALIBRATION_SAMPLE_INTERVAL = 10;
+    constexpr int CALIBRATION_SAMPLE_COUNT = 10;
 }

@@ -345,7 +345,7 @@ void BeltFSM::startCalibration() {
         for (int i = 0; i < imuCount; i++) {
             baseline_.imuBaselines[i][0] += imuSensors[i]->getRoll();
             baseline_.imuBaselines[i][1] += imuSensors[i]->getPitch();
-            baseline_.imuBaselines[i][2] += imuSensors[i]->getYaw();
+            // baseline_.imuBaselines[i][2] += imuSensors[i]->getYaw();
         }
         
         // Show progress
@@ -416,7 +416,7 @@ void BeltFSM::collectCalibrationSample() {
     for (int i = 0; i < imuCount; i++) {
         baseline_.imuBaselines[i][0] += imuSensors[i]->getRoll();
         baseline_.imuBaselines[i][1] += imuSensors[i]->getPitch();
-        baseline_.imuBaselines[i][2] += imuSensors[i]->getYaw();
+        // baseline_.imuBaselines[i][2] += imuSensors[i]->getYaw();
     }
     
     calibrationSampleCount_++;
