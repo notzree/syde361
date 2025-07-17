@@ -13,14 +13,15 @@
 
 // --- Configuration ---
 #define FSR_PIN_1 A0
-#define FSR_PIN_2 A1
-#define FSR_PIN_3 A2
-#define FSR_PIN_4 A3
-#define FSR_PIN_5 A4
+// #define FSR_PIN_2 A1
+// #define FSR_PIN_3 A2
+// #define FSR_PIN_4 A3
+// #define FSR_PIN_5 A4
 
-#define MOTOR_PIN_1   8
+#define MOTOR_PIN_1   D5
 
-#define MAIN_BUTTON_PIN 2
+#define MAIN_BUTTON_PIN D2
+#define CALIBRATION_BUTTON_PIN D3
 
 // --- Global Variables ---
 std::unique_ptr<BeltFSM> beltFsm;
@@ -35,26 +36,29 @@ void setup() {
   auto inputManager = std::unique_ptr<InputManager>(new InputManager());
 
   auto fsr1 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr1", FSR_PIN_1));
-  sensorManager->addSensor(fsr1.get());
+  sensorManager->addSensor(fsr1.release());
 
-  auto fsr2 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr2", FSR_PIN_2));
-  sensorManager->addSensor(fsr2.get());
+  // auto fsr2 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr2", FSR_PIN_2));
+  // sensorManager->addSensor(std::move(fsr2));
 
-  auto fsr3 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr3", FSR_PIN_3));
-  sensorManager->addSensor(fsr3.get());
+  // auto fsr3 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr3", FSR_PIN_3));
+  // sensorManager->addSensor(std::move(fsr3));
 
-  auto fsr4 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr4", FSR_PIN_4));
-  sensorManager->addSensor(fsr4.get());
+  // auto fsr4 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr4", FSR_PIN_4));
+  // sensorManager->addSensor(std::move(fsr4));
 
-  auto fsr5 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr5", FSR_PIN_5));
-  sensorManager->addSensor(fsr5.get());
+  // auto fsr5 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr5", FSR_PIN_5));
+  // sensorManager->addSensor(std::move(fsr5));
 
   auto imu1 = std::unique_ptr<MPU6050Sensor>(new MPU6050Sensor("imu1"));
-  sensorManager->addSensor(imu1.get());
+  sensorManager->addSensor(imu1.release());
   
   auto motor1 = std::unique_ptr<VibrationMotor>(new VibrationMotor("motor1", MOTOR_PIN_1));
   feedbackManager->addMotor(std::move(motor1));
+
   inputManager->addButton("main_button", MAIN_BUTTON_PIN);
+  inputManager->addButton("calibration_button", CALIBRATION_BUTTON_PIN);
+  inputManager->initialize();
 
   beltFsm = std::unique_ptr<BeltFSM>(new BeltFSM(
       std::move(sensorManager),

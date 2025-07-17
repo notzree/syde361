@@ -19,6 +19,11 @@ private:
     int pin_;
     FSRData data_;
     bool initialized_;
+    static const int SMOOTHING_SAMPLES = 10;
+    int smoothingBuffer_[SMOOTHING_SAMPLES];
+    int smoothingIndex_;
+    long smoothingTotal_;
+    int baseline_;
 
 public:
     FSRSensor(const char* name, int pin);
@@ -32,4 +37,9 @@ public:
     
     // Helper function to check if force is being applied
     bool isPressed(float threshold = 0.1f) const;
+    void setBaseline(int baseline);
+    int getBaseline() const;
+    int getRawValue() const;
+    float getPressureAboveBaseline() const;
+    bool isBracing(float threshold) const;
 };

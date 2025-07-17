@@ -1,6 +1,8 @@
 #include "fsm/state_machine.h"
 #include "../config/belt_config.h"
+#include "USBCDC.h"
 #include "fsm/belt_states.h"
+#include "sensors/fsr_sensor.h"
 #include "sensors/sensor_manager.h"
 #include <Arduino.h>
 #include <memory>
@@ -23,9 +25,14 @@ BeltFSM::BeltFSM(
     buttonPressTime_(0),
     waitingForSecondPress_(false),
     calibrationStartTime_(0),
-    feedbackStartTime_(0)
-     {
+    feedbackStartTime_(0) {
     baseline_.isCalibrated = false;
+    // Initialize calibration tracking
+    this->calibrationSampleCount_ = 0;
+    this->isCollectingCalibration_ = false;
+    for (int i = 0; i < 5; i++) {
+        calibrationSums_[i] = 0;
+    }
 }
 
 bool BeltFSM::initialize(){
@@ -74,14 +81,14 @@ void BeltFSM::update() {
 BeltEvent BeltFSM::checkForEvents() {
     unsigned long currentTime = millis();
     
-    if (inputManager_->isButtonDoublePressed("main_button")) {
-        inputManager_->clearButtonDoublePress("main_button");
-        return BeltEvent::BUTTON_DOUBLE_PRESSED;
+    if (inputManager_->isPressed("main_button")) {
+        inputManager_->clearPress("main_button");
+        return BeltEvent::BUTTON_PRESSED;
     }
     
-    if (inputManager_->isButtonPressed("main_button")) {
-        inputManager_->clearButtonPress("main_button");
-        return BeltEvent::BUTTON_PRESSED;
+    if (inputManager_->isPressed("calibration_button")) {
+        inputManager_->clearPress("calibration_button");
+        return BeltEvent::CALIBRATION_BUTTON_PRESSED;
     }
     
     if (!sensorManager_->areAllSensorsHealthy()) {
@@ -122,7 +129,6 @@ BeltEvent BeltFSM::checkForEvents() {
     
     return BeltEvent::NO_EVENT;
 }
-
 
 void BeltFSM::handleEvent(BeltEvent event) {
     switch (currentState_) {
@@ -171,9 +177,8 @@ void BeltFSM::enterState(BeltState state) {
     
     switch (state) {
         case BeltState::CALIBRATION:
-            calibrationStartTime_ = millis();
-            feedbackManager_->startPattern(FeedbackPattern::CALIBRATION);
             startCalibration();
+            feedbackManager_->startPattern(FeedbackPattern::CALIBRATION);
             break;
             
         case BeltState::FEEDBACK_GOOD:
@@ -229,9 +234,14 @@ void BeltFSM::handleStartupState(BeltEvent event) {
 void BeltFSM::handleIdleState(BeltEvent event) {
     switch (event) {
         case BeltEvent::BUTTON_PRESSED:
-            transitionTo(BeltState::READY);
+            if (baseline_.isCalibrated) {
+                transitionTo(BeltState::READY);
+            } else {
+                Serial.println("Please calibrate first!");
+                transitionTo(BeltState::CALIBRATION);
+            }
             break;
-        case BeltEvent::BUTTON_DOUBLE_PRESSED:
+        case BeltEvent::CALIBRATION_BUTTON_PRESSED:
             transitionTo(BeltState::CALIBRATION);
             break;
         case BeltEvent::SENSOR_FAILURE:
@@ -291,17 +301,179 @@ void BeltFSM::handleErrorState(BeltEvent event) {
 
 void BeltFSM::startCalibration() {
     Serial.println("Starting calibration...");
+    Serial.println("RELAX YOUR CORE - Stay still for calibration");
+    
     baseline_.isCalibrated = false;
-
+    
     // Clear previous baseline data
-    for (int i = 0; i < 5; ++i) baseline_.fsrBaselines[i] = 0;
+    for (int i = 0; i < 5; ++i) {
+        baseline_.fsrBaselines[i] = 0;
+    }
+    
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
             baseline_.imuBaselines[i][j] = 0;
         }
     }
+    
+    // Collect baseline samples
+    const int CALIBRATION_SAMPLES = 100;
+    const int SAMPLE_DELAY = 50; // ms between samples
+    
+    Serial.println("Collecting baseline samples...");
+    
+    // Get FSR sensors
+    FSRSensor* fsrSensors[5];
+    int fsrCount = sensorManager_->getAllFSRSensors(fsrSensors, 5);
+    
+    // Get IMU sensors
+    MPU6050Sensor* imuSensors[3];
+    int imuCount = sensorManager_->getAllIMUSensors(imuSensors, 3);
+    
+    // Collect samples
+    for (int sample = 0; sample < CALIBRATION_SAMPLES; sample++) {
+        // Update sensors
+        sensorManager_->updateAll();
+        
+        // Collect FSR samples
+        for (int i = 0; i < fsrCount; i++) {
+            FSRData data = fsrSensors[i]->getData();
+            baseline_.fsrBaselines[i] += data.rawValue;
+        }
+        
+        // Collect IMU samples
+        for (int i = 0; i < imuCount; i++) {
+            baseline_.imuBaselines[i][0] += imuSensors[i]->getRoll();
+            baseline_.imuBaselines[i][1] += imuSensors[i]->getPitch();
+            baseline_.imuBaselines[i][2] += imuSensors[i]->getYaw();
+        }
+        
+        // Show progress
+        if (sample % 10 == 0) {
+            Serial.print("Progress: ");
+            Serial.print((sample * 100) / CALIBRATION_SAMPLES);
+            Serial.println("%");
+        }
+        
+        delay(SAMPLE_DELAY);
+    }
+    
+    // Calculate averages
+    for (int i = 0; i < fsrCount; i++) {
+        baseline_.fsrBaselines[i] /= CALIBRATION_SAMPLES;
+        // Set baseline on each FSR sensor
+        fsrSensors[i]->setBaseline((int)baseline_.fsrBaselines[i]);
+        
+        Serial.print("FSR ");
+        Serial.print(i);
+        Serial.print(" baseline: ");
+        Serial.println(baseline_.fsrBaselines[i]);
+    }
+    
+    for (int i = 0; i < imuCount; i++) {
+        baseline_.imuBaselines[i][0] /= CALIBRATION_SAMPLES; // Roll
+        baseline_.imuBaselines[i][1] /= CALIBRATION_SAMPLES; // Pitch
+        baseline_.imuBaselines[i][2] /= CALIBRATION_SAMPLES; // Yaw
+        
+        Serial.print("IMU ");
+        Serial.print(i);
+        Serial.print(" baseline - Roll: ");
+        Serial.print(baseline_.imuBaselines[i][0]);
+        Serial.print(", Pitch: ");
+        Serial.print(baseline_.imuBaselines[i][1]);
+        Serial.print(", Yaw: ");
+        Serial.println(baseline_.imuBaselines[i][2]);
+    }
+    
+    baseline_.isCalibrated = true;
+    Serial.println("Calibration complete! Belt is ready for use.");
+}
 
-    // TODO: Add logic to collect and average sensor data over CALIBRATION_DURATION
+void BeltFSM::collectCalibrationSample() {
+    // Collect samples every CALIBRATION_SAMPLE_INTERVAL milliseconds
+    static unsigned long lastSampleTime = 0;
+    unsigned long currentTime = millis();
+    
+    if (currentTime - lastSampleTime < BeltConfig::CALIBRATION_SAMPLE_INTERVAL) {
+        return;
+    }
+    
+    lastSampleTime = currentTime;
+    
+    // Collect FSR samples
+    FSRSensor* fsrSensors[5];
+    int fsrCount = sensorManager_->getAllFSRSensors(fsrSensors, 5);
+    
+    for (int i = 0; i < fsrCount; i++) {
+        FSRData data = fsrSensors[i]->getData();
+        calibrationSums_[i] += data.rawValue;
+    }
+    
+    // Collect IMU samples
+    MPU6050Sensor* imuSensors[3];
+    int imuCount = sensorManager_->getAllIMUSensors(imuSensors, 3);
+    
+    for (int i = 0; i < imuCount; i++) {
+        baseline_.imuBaselines[i][0] += imuSensors[i]->getRoll();
+        baseline_.imuBaselines[i][1] += imuSensors[i]->getPitch();
+        baseline_.imuBaselines[i][2] += imuSensors[i]->getYaw();
+    }
+    
+    calibrationSampleCount_++;
+    
+    // Show progress
+    if (calibrationSampleCount_ % 10 == 0) {
+        Serial.print("Calibration progress: ");
+        Serial.print((calibrationSampleCount_ * 100) / BeltConfig::CALIBRATION_SAMPLE_COUNT);
+        Serial.println("%");
+    }
+}
+
+void BeltFSM::finishCalibration() {
+    if (calibrationSampleCount_ == 0) {
+        Serial.println("Calibration failed - no samples collected!");
+        baseline_.isCalibrated = false;
+        return;
+    }
+    
+    isCollectingCalibration_ = false;
+    
+    // Calculate averages for FSR sensors
+    FSRSensor* fsrSensors[5];
+    int fsrCount = sensorManager_->getAllFSRSensors(fsrSensors, 5);
+    
+    for (int i = 0; i < fsrCount; i++) {
+        baseline_.fsrBaselines[i] = calibrationSums_[i] / calibrationSampleCount_;
+        // Set the baseline on each FSR sensor
+        fsrSensors[i]->setBaseline(baseline_.fsrBaselines[i]);
+        
+        Serial.print("FSR ");
+        Serial.print(i);
+        Serial.print(" baseline: ");
+        Serial.println(baseline_.fsrBaselines[i]);
+    }
+    
+    // Calculate averages for IMU sensors
+    MPU6050Sensor* imuSensors[3];
+    int imuCount = sensorManager_->getAllIMUSensors(imuSensors, 3);
+    
+    for (int i = 0; i < imuCount; i++) {
+        baseline_.imuBaselines[i][0] /= calibrationSampleCount_; // Roll
+        baseline_.imuBaselines[i][1] /= calibrationSampleCount_; // Pitch
+        baseline_.imuBaselines[i][2] /= calibrationSampleCount_; // Yaw
+        
+        Serial.print("IMU ");
+        Serial.print(i);
+        Serial.print(" baseline - Roll: ");
+        Serial.print(baseline_.imuBaselines[i][0]);
+        Serial.print(", Pitch: ");
+        Serial.print(baseline_.imuBaselines[i][1]);
+        Serial.print(", Yaw: ");
+        Serial.println(baseline_.imuBaselines[i][2]);
+    }
+    
+    baseline_.isCalibrated = true;
+    Serial.println("Calibration complete! Belt is ready for use.");
 }
 
 bool BeltFSM::isGoodBraceDetected() const {
@@ -310,21 +482,39 @@ bool BeltFSM::isGoodBraceDetected() const {
     FSRSensor* fsrSensors[5];
     int fsrCount = sensorManager_->getAllFSRSensors(fsrSensors, 5);
     
-    if (fsrCount < 2) return false;
+    float totalPressure = 0;
+    float pressures[5];
     
-    float totalWeight = 0;
-    float weights[5];
     for (int i = 0; i < fsrCount; i++) {
         FSRData data = fsrSensors[i]->getData();
-        weights[i] = data.weight - baseline_.fsrBaselines[i];
-        totalWeight += weights[i];
+        // data.weight now contains pressure above baseline
+        pressures[i] = data.weight;
+        totalPressure += pressures[i];
+        
+        Serial.print("FSR ");
+        Serial.print(i);
+        Serial.print(" pressure above baseline: ");
+        Serial.println(pressures[i]);
     }
     
-    if (totalWeight < BeltConfig::MIN_ENGAGEMENT_WEIGHT) return false;
+    Serial.print("Total pressure above baseline: ");
+    Serial.println(totalPressure);
     
-    float variance = calculateVariance(weights, fsrCount);
+    // Check if enough pressure is being applied
+    if (totalPressure < BeltConfig::MIN_ENGAGEMENT_PRESSURE) {
+        return false;
+    }
+    
+    // Check for even distribution of pressure
+    float variance = calculateVariance(pressures, fsrCount);
     bool evenDistribution = variance < BeltConfig::GOOD_DISTRIBUTION_THRESHOLD;
     
+    Serial.print("Pressure variance: ");
+    Serial.print(variance);
+    Serial.print(", Even distribution: ");
+    Serial.println(evenDistribution ? "YES" : "NO");
+    
+    // Check IMU alignment
     MPU6050Sensor* imuSensors[3];
     int imuCount = sensorManager_->getAllIMUSensors(imuSensors, 3);
     
@@ -335,11 +525,22 @@ bool BeltFSM::isGoodBraceDetected() const {
         
         if (abs(pitch) > BeltConfig::PITCH_THRESHOLD || abs(roll) > BeltConfig::ROLL_THRESHOLD) {
             properAlignment = false;
+            Serial.print("IMU ");
+            Serial.print(i);
+            Serial.print(" out of alignment - Pitch: ");
+            Serial.print(pitch);
+            Serial.print(", Roll: ");
+            Serial.println(roll);
             break;
         }
     }
     
-    return evenDistribution && properAlignment;
+    bool goodBrace = evenDistribution && properAlignment;
+    if (goodBrace) {
+        Serial.println("GOOD BRACE DETECTED!");
+    }
+    
+    return goodBrace;
 }
 
 bool BeltFSM::isPoorBraceDetected() const {
@@ -350,17 +551,29 @@ bool BeltFSM::isPoorBraceDetected() const {
     
     float leftSide = 0, rightSide = 0;
     for (int i = 0; i < fsrCount; i++) {
-        float weight = fsrSensors[i]->getData().weight - baseline_.fsrBaselines[i];
-        if (i % 2 == 0) leftSide += weight;
-        else rightSide += weight;
+        FSRData data = fsrSensors[i]->getData();
+        float pressure = data.weight; // weight field contains pressure above baseline
+        if (i % 2 == 0) leftSide += pressure;
+        else rightSide += pressure;
     }
     
-    float totalWeight = leftSide + rightSide;
-    if (totalWeight < BeltConfig::MIN_ENGAGEMENT_WEIGHT) return false;
+    float totalPressure = leftSide + rightSide;
+    if (totalPressure < BeltConfig::MIN_ENGAGEMENT_PRESSURE) return false;
     
-    float asymmetryRatio = abs(leftSide - rightSide) / totalWeight;
+    // Check for asymmetric pressure distribution
+    float asymmetryRatio = abs(leftSide - rightSide) / totalPressure;
     bool asymmetricPressure = asymmetryRatio > BeltConfig::ASYMMETRY_THRESHOLD;
     
+    if (asymmetricPressure) {
+        Serial.print("Asymmetric pressure detected - Left: ");
+        Serial.print(leftSide);
+        Serial.print(", Right: ");
+        Serial.print(rightSide);
+        Serial.print(", Ratio: ");
+        Serial.println(asymmetryRatio);
+    }
+    
+    // Check for dangerous angles
     MPU6050Sensor* imuSensors[3];
     int imuCount = sensorManager_->getAllIMUSensors(imuSensors, 3);
     
@@ -371,28 +584,39 @@ bool BeltFSM::isPoorBraceDetected() const {
         
         if (pitch > BeltConfig::DANGER_PITCH_THRESHOLD || roll > BeltConfig::DANGER_ROLL_THRESHOLD) {
             dangerousAngle = true;
+            Serial.print("Dangerous angle detected on IMU ");
+            Serial.print(i);
+            Serial.print(" - Pitch: ");
+            Serial.print(pitch);
+            Serial.print(", Roll: ");
+            Serial.println(roll);
             break;
         }
     }
     
-    return asymmetricPressure || dangerousAngle;
+    bool poorBrace = asymmetricPressure || dangerousAngle;
+    if (poorBrace) {
+        Serial.println("POOR BRACE DETECTED!");
+    }
+    
+    return poorBrace;
 }
-
 
 float BeltFSM::calculateVariance(float* values, int count) const {
     if (count == 0) return 0;
+    
     float sum = 0;
     for (int i = 0; i < count; ++i) {
         sum += values[i];
     }
     float mean = sum / count;
+    
     float variance = 0;
     for (int i = 0; i < count; ++i) {
         variance += std::pow(values[i] - mean, 2);
     }
     return variance / count;
 }
-
 
 unsigned long BeltFSM::getStateTime() const {
     return millis() - stateEntryTime_;
