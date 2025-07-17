@@ -6,7 +6,7 @@
 // A simple struct to manage button state and debouncing
 struct Button {
     int pin;
-    bool lastState = HIGH; // Assuming INPUT_PULLUP
+    bool lastState = LOW; // Assuming INPUT_PULLUP
     bool pressed = false;
     unsigned long lastDebounceTime = 0;
     
@@ -29,6 +29,6 @@ public:
     void clearButtonPress(const char* name);
 
 private:
-    std::map<std::string, Button> buttons_;
+std::map<std::string, Button> buttons_;
     unsigned long debounceDelay_ = 50; // 50ms debounce delay
 };

@@ -1,4 +1,5 @@
 #include "input_manager.h"
+#include "Arduino.h"
 
 InputManager::InputManager() = default;
 
@@ -22,26 +23,38 @@ void InputManager::update() {
         if (reading != button.lastState) {
             button.lastDebounceTime = currentTime;
         }
+  
+        Serial.println("Debounce Delay");
+        Serial.println(button.lastState);
+        Serial.println(reading);
 
-        if ((currentTime - button.lastDebounceTime) > debounceDelay_) {
-            // A press is a transition from HIGH to LOW
-            if (reading == LOW && button.lastState == HIGH) {
-                button.pressed = true;
-            }
+        if (reading == HIGH && button.lastState == LOW) {
+            button.lastState = HIGH;
+        } else if (reading == HIGH && button.lastState == HIGH) {
+            button.lastState = LOW;
         }
-        button.lastState = reading;
+
+        // if ((currentTime - button.lastDebounceTime) > debounceDelay_) {
+            
+
+        //     // A press is a transition from HIGH to LOW
+        //     if (reading == HIGH && button.lastState == LOW) {
+        //         button.pressed = true;
+        //     }
+        // }
+        // button.lastState = reading;
     }
 }
 
 bool InputManager::isButtonPressed(const char* name) {
     if (buttons_.count(name)) {
-        return buttons_.at(name).pressed;
+        return buttons_.at(name).lastState;
     }
     return false;
 }
 
 void InputManager::clearButtonPress(const char* name) {
     if (buttons_.count(name)) {
-        buttons_.at(name).pressed = false;
+        buttons_.at(name).lastState = LOW;
     }
 }

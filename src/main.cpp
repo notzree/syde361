@@ -522,23 +522,24 @@ void setup() {
 
 void loop() {
   // Buzz the motor(s) every 3 seconds
-//   inputManager.update();
-//   if (inputManager.isButtonPressed("test_button")) {
-//     Serial.println("Button Pressed");
-//     feedbackManager.buzzAll();
-//     inputManager.clearButtonPress("test_button");
-//     delay(3000);
-//   } else {
-//     Serial.println("Button not pressed");
-//   }
-
-  bool pressed = (digitalRead(D2) == HIGH);
-
-  if (pressed) {
-    Serial.println("Pressed");
+  inputManager.update();
+  delay(100);
+  if (inputManager.isButtonPressed("test_button")) {
+    Serial.println("Button Pressed");
+    feedbackManager.buzzAll();
+    inputManager.clearButtonPress("test_button");
+    delay(3000);
   } else {
-    Serial.println("Released");
+    Serial.println("Button not pressed");
   }
+
+//   bool pressed = (digitalRead(D2) == HIGH);
+
+//   if (pressed) {
+//     Serial.println("Pressed");
+//   } else {
+//     Serial.println("Released");
+//   }
 
 //   Serial.println("Buzzing all motors for 150ms...");
 //   feedbackManager.buzzAll();
