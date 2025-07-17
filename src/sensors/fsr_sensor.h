@@ -3,12 +3,13 @@
 
 // Simple structure for FSR data
 struct FSRData {
-    float force;           // Normalized force (0.0 to 1.0)
+    // float force;           // 
     int rawValue;          // Raw ADC reading
     unsigned long timestamp;
     bool valid;
+    float weight;
     
-    FSRData() : force(0), rawValue(0), timestamp(0), valid(false) {}
+    FSRData() : weight(0), rawValue(0), timestamp(0), valid(false) {}
 };
 
 // Force Sensitive Resistor Sensor

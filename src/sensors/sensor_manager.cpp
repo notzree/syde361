@@ -129,7 +129,7 @@ void SimpleSensorManager::printAllSensorData() const {
                 Serial.print("  ");
                 Serial.print(fsrSensors[i]->getName());
                 Serial.print(": ");
-                Serial.print(data.force, 3);
+                Serial.print(data.weight, 3);
                 Serial.print(" (");
                 Serial.print(data.rawValue);
                 Serial.print(")");

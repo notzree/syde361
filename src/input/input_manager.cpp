@@ -16,45 +16,66 @@ bool InputManager::initialize() {
 
 void InputManager::update() {
     unsigned long currentTime = millis();
+    
     for (auto& [name, button] : buttons_) {
-        bool reading = digitalRead(button.pin);
-
-        // If the switch changed, due to noise or pressing
+        bool reading = digitalRead(button.pin) == LOW; // Active low with pullup
+        
+        // Debouncing
         if (reading != button.lastState) {
             button.lastDebounceTime = currentTime;
         }
-  
-        Serial.println("Debounce Delay");
-        Serial.println(button.lastState);
-        Serial.println(reading);
-
-        if (reading == HIGH && button.lastState == LOW) {
-            button.lastState = HIGH;
-        } else if (reading == HIGH && button.lastState == HIGH) {
-            button.lastState = LOW;
+        
+        if ((currentTime - button.lastDebounceTime) > DEBOUNCE_DELAY) {
+            // Rising edge detection (button press)
+            if (reading && !button.lastState) {
+                button.pressCount++;
+                button.lastPressTime = currentTime;
+                
+                if (button.pressCount == 1) {
+                    // First press
+                    button.pressed = true;
+                } else if (button.pressCount == 2 && 
+                          (currentTime - button.lastPressTime) < DOUBLE_PRESS_WINDOW) {
+                    // Second press within window
+                    button.doublePressed = true;
+                    button.pressed = false; // Clear single press
+                }
+            }
         }
-
-        // if ((currentTime - button.lastDebounceTime) > debounceDelay_) {
-            
-
-        //     // A press is a transition from HIGH to LOW
-        //     if (reading == HIGH && button.lastState == LOW) {
-        //         button.pressed = true;
-        //     }
-        // }
-        // button.lastState = reading;
+        
+        // Reset press count after window expires
+        if (button.pressCount > 0 && 
+            (currentTime - button.lastPressTime) > DOUBLE_PRESS_WINDOW) {
+            button.pressCount = 0;
+        }
+        
+        button.lastState = reading;
     }
 }
 
+
 bool InputManager::isButtonPressed(const char* name) {
     if (buttons_.count(name)) {
-        return buttons_.at(name).lastState;
+        return buttons_.at(name).pressed;
     }
     return false;
 }
 
 void InputManager::clearButtonPress(const char* name) {
     if (buttons_.count(name)) {
-        buttons_.at(name).lastState = LOW;
+        buttons_.at(name).pressed = false;
+    }
+}
+
+bool InputManager::isButtonDoublePressed(const char* name) {
+    if (buttons_.count(name)) {
+        return buttons_.at(name).doublePressed;
+    }
+    return false;
+}
+
+void InputManager::clearButtonDoublePress(const char* name) {
+    if (buttons_.count(name)) {
+        buttons_.at(name).doublePressed = false;
     }
 }

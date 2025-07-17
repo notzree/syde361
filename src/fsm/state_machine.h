@@ -2,7 +2,7 @@
 #include "belt_states.h"
 #include "belt_events.h"
 #include "../sensors/sensor_manager.h"
-#include "../input/input_manager.h"  // Add this include
+#include "../input/input_manager.h"
 #include "../feedback/feedback_manager.h"
 #include <memory>
 #include <functional>
@@ -15,7 +15,7 @@ public:
     explicit BeltFSM(
         std::unique_ptr<SimpleSensorManager> sensorManager,
         std::unique_ptr<FeedbackManager> feedbackManager,
-        std::unique_ptr<InputManager> inputManager  // Add this parameter
+        std::unique_ptr<InputManager> inputManager
     );
     
     ~BeltFSM() = default;
@@ -46,39 +46,50 @@ private:
     
     // State handlers
     void handleStartupState(BeltEvent event);
+    void handleIdleState(BeltEvent event);
     void handleCalibrationState(BeltEvent event);
     void handleReadyState(BeltEvent event);
-    void handleFeedbackGoodState(BeltEvent event);
-    void handleFeedbackPoorState(BeltEvent event);
+    void handleFeedbackState(BeltEvent event);
     void handleErrorState(BeltEvent event);
     
     // Analysis methods
     bool isGoodBraceDetected() const;
     bool isPoorBraceDetected() const;
-    bool isLiftComplete() const;
-    
+    float calculateVariance(float* values, int count) const;
+
+
     // Calibration methods
     void startCalibration();
-    void isCalibrated();
+    bool isCalibrationComplete();
+
+    void startFeedback(FeedbackPattern pattern);
+    bool isFeedbackComplete();
     
     // Member variables
     BeltState currentState_;
     unsigned long stateEntryTime_;
-    unsigned long lastActivity_;
     
     // Components (injected dependencies)
     std::unique_ptr<SimpleSensorManager> sensorManager_;
-    std::unique_ptr<InputManager> inputManager_;  // Add this member
+    std::unique_ptr<InputManager> inputManager_;
     std::unique_ptr<FeedbackManager> feedbackManager_;
     
     // Callbacks
     StateChangeCallback stateChangeCallback_;
+
+    unsigned long buttonPressTime_;
+    bool waitingForSecondPress_;
+    unsigned long calibrationStartTime_;
+    unsigned long feedbackStartTime_;
+    FeedbackPattern currentFeedbackPattern_;
     
-    // Calibration data
-    std::vector<float> baselineData_;
-    std::vector<float> braceData_;
-    float braceThreshold_;
-    
+    // Baseline/calibration data
+    struct SensorBaseline {
+        float fsrBaselines[5];
+        float imuBaselines[3][3]; // roll, pitch, yaw for each IMU
+        bool isCalibrated;
+    } baseline_;
+
     // Timing
     unsigned long lastEventCheck_;
 };

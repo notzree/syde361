@@ -1,0 +1,5 @@
+Startup state
+-> SENSORS_INITIALIZED
+Ready state
+-> BUTTON_PRESSED
+
