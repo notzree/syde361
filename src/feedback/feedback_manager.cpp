@@ -56,7 +56,7 @@ bool FeedbackManager::isPatternComplete() {
     if (currentTime - patternStartTime_ >= duration) {
         patternActive_ = false;
         for (auto& motor : motors_) {
-            motor->stop();
+            // motor->stop();
         }
         return true;
     }
@@ -67,7 +67,7 @@ bool FeedbackManager::isPatternComplete() {
 void FeedbackManager::stopPattern() {
     patternActive_ = false;
     for (auto& motor : motors_) {
-        motor->stop();
+        // motor->stop();
     }
 }
 
@@ -84,7 +84,7 @@ void FeedbackManager::updatePattern() {
             if (elapsedTime < 150) { // Pulse 1
                 for (auto& motor : motors_) motor->buzz();
             } else if (elapsedTime < 250) { // Gap 1
-                for (auto& motor : motors_) motor->stop();
+                // for (auto& motor : motors_) motor->stop();
             } else if (elapsedTime < 400) { // Pulse 2
                 for (auto& motor : motors_) motor->buzz();
             } else {
@@ -96,11 +96,11 @@ void FeedbackManager::updatePattern() {
             if (elapsedTime < 250) { // Pulse 1
                 for (auto& motor : motors_) motor->buzz();
             } else if (elapsedTime < 400) { // Gap 1
-                for (auto& motor : motors_) motor->stop();
+                // for (auto& motor : motors_) motor->stop();
             } else if (elapsedTime < 650) { // Pulse 2
                 for (auto& motor : motors_) motor->buzz();
             } else if (elapsedTime < 800) { // Gap 2
-                for (auto& motor : motors_) motor->stop();
+                // for (auto& motor : motors_) motor->stop();
             } else if (elapsedTime < 1050) { // Pulse 3
                 for (auto& motor : motors_) motor->buzz();
             } else {
@@ -112,7 +112,7 @@ void FeedbackManager::updatePattern() {
             if ((elapsedTime / 500) % 2 == 0) { // 500ms on, 500ms off
                 for (auto& motor : motors_) motor->buzz();
             } else {
-                for (auto& motor : motors_) motor->stop();
+                // for (auto& motor : motors_) motor->stop();
             }
             break;
 
@@ -120,7 +120,7 @@ void FeedbackManager::updatePattern() {
             if ((elapsedTime / 100) % 2 == 0 && elapsedTime < 1000) { // 100ms on, 100ms off, 5 times
                 for (auto& motor : motors_) motor->buzz();
             } else {
-                for (auto& motor : motors_) motor->stop();
+                // for (auto& motor : motors_) motor->stop();
             }
             break;
     }

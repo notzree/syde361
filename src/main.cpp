@@ -35,26 +35,25 @@ void setup() {
   auto inputManager = std::unique_ptr<InputManager>(new InputManager());
 
   auto fsr1 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr1", FSR_PIN_1));
-  sensorManager->addSensor(std::move(fsr1));
+  sensorManager->addSensor(fsr1.get());
 
   auto fsr2 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr2", FSR_PIN_2));
-  sensorManager->addSensor(std::move(fsr2));
+  sensorManager->addSensor(fsr2.get());
 
   auto fsr3 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr3", FSR_PIN_3));
-  sensorManager->addSensor(std::move(fsr3));
+  sensorManager->addSensor(fsr3.get());
 
   auto fsr4 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr4", FSR_PIN_4));
-  sensorManager->addSensor(std::move(fsr4));
+  sensorManager->addSensor(fsr4.get());
 
   auto fsr5 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr5", FSR_PIN_5));
-  sensorManager->addSensor(std::move(fsr5));
+  sensorManager->addSensor(fsr5.get());
 
   auto imu1 = std::unique_ptr<MPU6050Sensor>(new MPU6050Sensor("imu1"));
-  sensorManager->addSensor(std::move(imu1));
+  sensorManager->addSensor(imu1.get());
   
   auto motor1 = std::unique_ptr<VibrationMotor>(new VibrationMotor("motor1", MOTOR_PIN_1));
   feedbackManager->addMotor(std::move(motor1));
-
   inputManager->addButton("main_button", MAIN_BUTTON_PIN);
 
   beltFsm = std::unique_ptr<BeltFSM>(new BeltFSM(
