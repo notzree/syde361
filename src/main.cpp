@@ -59,7 +59,6 @@ void setup() {
   inputManager->addButton("main_button", MAIN_BUTTON_PIN);
   inputManager->addButton("calibration_button", CALIBRATION_BUTTON_PIN);
   inputManager->initialize();
-
   beltFsm = std::unique_ptr<BeltFSM>(new BeltFSM(
       std::move(sensorManager),
       std::move(feedbackManager),

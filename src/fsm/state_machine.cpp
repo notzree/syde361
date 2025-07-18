@@ -484,7 +484,8 @@ bool BeltFSM::isGoodBraceDetected() const {
     
     float totalPressure = 0;
     float pressures[5];
-    
+    Serial.println("sensor count:");
+    Serial.println(fsrCount);
     for (int i = 0; i < fsrCount; i++) {
         FSRData data = fsrSensors[i]->getData();
         // data.weight now contains pressure above baseline
