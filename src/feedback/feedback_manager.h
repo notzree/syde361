@@ -23,6 +23,8 @@ class FeedbackManager {
         void update();
         
         void startPattern(FeedbackPattern pattern);
+        void startLED(LEDS);
+        void stopLED(LEDS);
         bool isPatternComplete();
         void stopPattern();
         void updatePattern(); // Call in main loop

@@ -15,6 +15,32 @@ void FeedbackManager::addLED(std::unique_ptr<LED> led) {
         leds_[2] = std::move(led);
     }
 }
+void FeedbackManager::startLED(LEDS type ){
+    switch(type) {
+        case LEDS::IDLE:
+        leds_[0]->turnOn();
+            break;
+        case LEDS::CALIBRATING:
+        leds_[1]->turnOn();
+            break;
+        case LEDS::READY:
+        leds_[2]->turnOn();
+            break;
+    }
+}
+void FeedbackManager::stopLED(LEDS type ){
+    switch(type) {
+        case LEDS::IDLE:
+        leds_[0]->turnOff();
+            break;
+        case LEDS::CALIBRATING:
+        leds_[1]->turnOff();
+            break;
+        case LEDS::READY:
+        leds_[2]->turnOff();
+            break;
+    }
+}
 
 bool FeedbackManager::initializeAll() {
     Serial.println("Initializing all motors...");
@@ -28,7 +54,7 @@ bool FeedbackManager::initializeAll() {
     Serial.println("All motors initialized successfully");
 
     for (auto& led : leds_) {
-        if (!led->initialize()) {
+        if (led!= nullptr && !led->initialize()) {
             Serial.println("Failed to initialize LED");
             return false;
         }

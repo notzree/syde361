@@ -7,25 +7,27 @@ LED::LED(LEDS type, int pin) {
 }
 
 bool LED::initialize() {
+    Serial.println("Initializing LED...");
     pinMode(pin_, OUTPUT);
     digitalWrite(pin_, type_ == LEDS::IDLE ? HIGH : LOW);
+    return true;
 }
 
 void LED::turnOn() {
-    digitalWrite(pin_, HIGH);
+    digitalWrite(pin_, LOW);
     on_ = true;
     
 }
 
 void LED::turnOff() {
-    digitalWrite(pin_, LOW);
+    digitalWrite(pin_, HIGH);
     on_ = false;
 }
 
 void LED::flash() {
-    digitalWrite(pin_, HIGH);
-    delay(1500);
     digitalWrite(pin_, LOW);
+    delay(1500);
+    digitalWrite(pin_, HIGH);
     on_ = false;
 }
 

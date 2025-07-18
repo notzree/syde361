@@ -44,9 +44,6 @@ void setup() {
   auto fsr1 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr1", FSR_PIN_1));
   sensorManager->addSensor(fsr1.release());
 
-  // auto fsr2 = std::unique_ptr<FSRSensor>(new FSRSensor("fsr2", FSR_PIN_2));
-  // sensorManager->addSensor(std::move(fsr2));
-
   auto imu1 = std::unique_ptr<MPU6050Sensor>(new MPU6050Sensor("imu1"));
   sensorManager->addSensor(imu1.release());
   
@@ -64,7 +61,6 @@ void setup() {
 
   inputManager->addButton("main_button", MAIN_BUTTON_PIN);
   inputManager->addButton("calibration_button", CALIBRATION_BUTTON_PIN);
-  inputManager->initialize();
   
   beltFsm = std::unique_ptr<BeltFSM>(new BeltFSM(
       std::move(sensorManager),

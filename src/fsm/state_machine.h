@@ -76,7 +76,7 @@ private:
     std::unique_ptr<SimpleSensorManager> sensorManager_;
     std::unique_ptr<InputManager> inputManager_;
     std::unique_ptr<FeedbackManager> feedbackManager_;
-    
+
     // Callbacks
     StateChangeCallback stateChangeCallback_;
 

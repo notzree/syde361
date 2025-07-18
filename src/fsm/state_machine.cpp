@@ -179,7 +179,14 @@ void BeltFSM::enterState(BeltState state) {
     Serial.println(stateToString(state));
     
     switch (state) {
+        case BeltState::IDLE:
+            feedbackManager_->startLED(LEDS::IDLE);
+            break;
+        case BeltState::READY:
+            feedbackManager_->startLED(LEDS::READY);
+            break;
         case BeltState::CALIBRATION:
+            feedbackManager_->startLED(LEDS::CALIBRATING);
             startCalibration();
             feedbackManager_->startPattern(FeedbackPattern::CALIBRATION);
             break;
@@ -208,7 +215,14 @@ void BeltFSM::exitState(BeltState state) {
     Serial.println(stateToString(state));
     
     switch (state) {
+        case BeltState::IDLE:
+            feedbackManager_->stopLED(LEDS::IDLE);
+            break;
+        case BeltState::READY:
+            feedbackManager_->stopLED(LEDS::READY);
+            break;
         case BeltState::CALIBRATION:
+            feedbackManager_->stopLED(LEDS::CALIBRATING);
             baseline_.isCalibrated = true;
             feedbackManager_->stopPattern();
             break;
