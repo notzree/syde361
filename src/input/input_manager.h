@@ -3,32 +3,38 @@
 #include <map>
 #include <string>
 
-// A simple struct to manage button state and debouncing
-struct Button {
-    int pin;
-    bool lastState = LOW; // Assuming INPUT_PULLUP
-    bool pressed = false;
-    unsigned long lastDebounceTime = 0;
-    
-    // Constructor that accepts a pin
-    Button(int p) : pin(p) {}
-    
-    // Default constructor
-    Button() : pin(-1) {}
-};
-
 class InputManager {
 public:
     InputManager();
     
-    void addButton(const char* name, int pin);
+    // Add a button with a name and pin
+    bool addButton(const std::string& name, int pin);
+    
+    // Initialize all buttons
     bool initialize();
+    
+    // Update all buttons
     void update();
     
-    bool isButtonPressed(const char* name);
-    void clearButtonPress(const char* name);
+    // Check if a specific button is pressed
+    bool isPressed(const std::string& name);
+    
+    // Clear the press flag for a specific button
+    void clearPress(const std::string& name);
 
 private:
-std::map<std::string, Button> buttons_;
-    unsigned long debounceDelay_ = 50; // 50ms debounce delay
+    struct ButtonState {
+        int pin;
+        bool lastRawState;
+        bool lastDebouncedState;
+        unsigned long lastDebounceTime;
+        bool pressFlag;
+        
+        ButtonState() : pin(-1), lastRawState(HIGH), lastDebouncedState(HIGH), 
+                       lastDebounceTime(0), pressFlag(false) {}
+    };
+    
+    std::map<std::string, ButtonState> buttons_;
+    
+    static const unsigned long DEBOUNCE_DELAY = 50;
 };

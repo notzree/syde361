@@ -1,60 +1,81 @@
 #include "input_manager.h"
 #include "Arduino.h"
 
-InputManager::InputManager() = default;
+InputManager::InputManager() {}
 
-void InputManager::addButton(const char* name, int pin) {
-    buttons_[name] = Button{pin};
+bool InputManager::addButton(const std::string& name, int pin) {
+    // Check if button already exists
+    if (buttons_.find(name) != buttons_.end()) {
+        return false; // Button with this name already exists
+    }
+    
+    // Create new button state
+    ButtonState newButton;
+    newButton.pin = pin;
+    buttons_[name] = newButton;
+    
+    return true;
 }
 
 bool InputManager::initialize() {
-    for (auto const& [name, button] : buttons_) {
+    if (buttons_.empty()) return false;
+    
+    // Initialize all buttons
+    for (auto& pair : buttons_) {
+        ButtonState& button = pair.second;
+        
+        if (button.pin == -1) continue;
+        
         pinMode(button.pin, INPUT_PULLUP);
+        button.lastRawState = digitalRead(button.pin);
+        button.lastDebouncedState = button.lastRawState;
     }
+    
     return true;
 }
 
 void InputManager::update() {
     unsigned long currentTime = millis();
-    for (auto& [name, button] : buttons_) {
-        bool reading = digitalRead(button.pin);
-
-        // If the switch changed, due to noise or pressing
-        if (reading != button.lastState) {
+    
+    // Update all buttons
+    for (auto& pair : buttons_) {
+        ButtonState& button = pair.second;
+        
+        if (button.pin == -1) continue;
+        
+        bool currentRawState = digitalRead(button.pin);
+        
+        // Check if raw state changed (start debounce timer)
+        if (currentRawState != button.lastRawState) {
             button.lastDebounceTime = currentTime;
+            button.lastRawState = currentRawState;
         }
-  
-        Serial.println("Debounce Delay");
-        Serial.println(button.lastState);
-        Serial.println(reading);
-
-        if (reading == HIGH && button.lastState == LOW) {
-            button.lastState = HIGH;
-        } else if (reading == HIGH && button.lastState == HIGH) {
-            button.lastState = LOW;
-        }
-
-        // if ((currentTime - button.lastDebounceTime) > debounceDelay_) {
+        
+        // Check if enough time has passed for debouncing
+        if ((currentTime - button.lastDebounceTime) > DEBOUNCE_DELAY) {
+            bool currentDebouncedState = currentRawState;
             
-
-        //     // A press is a transition from HIGH to LOW
-        //     if (reading == HIGH && button.lastState == LOW) {
-        //         button.pressed = true;
-        //     }
-        // }
-        // button.lastState = reading;
+            // Detect press event (HIGH to LOW transition with pullup)
+            if (button.lastDebouncedState == HIGH && currentDebouncedState == LOW) {
+                button.pressFlag = true;
+            }
+            
+            button.lastDebouncedState = currentDebouncedState;
+        }
     }
 }
 
-bool InputManager::isButtonPressed(const char* name) {
-    if (buttons_.count(name)) {
-        return buttons_.at(name).lastState;
+bool InputManager::isPressed(const std::string& name) {
+    auto it = buttons_.find(name);
+    if (it != buttons_.end()) {
+        return it->second.pressFlag;
     }
     return false;
 }
 
-void InputManager::clearButtonPress(const char* name) {
-    if (buttons_.count(name)) {
-        buttons_.at(name).lastState = LOW;
+void InputManager::clearPress(const std::string& name) {
+    auto it = buttons_.find(name);
+    if (it != buttons_.end()) {
+        it->second.pressFlag = false;
     }
 }

@@ -30,7 +30,8 @@ bool SimpleSensorManager::initializeAll() {
         Serial.print("Initialized: ");
         Serial.println(sensors_[i]->getName());
     }
-    Serial.println("All sensors initialized successfully");
+    Serial.print(getSensorCount());
+    Serial.println(" sensors initialized successfully");
     return true;
 }
 
@@ -85,7 +86,7 @@ int SimpleSensorManager::getAllFSRSensors(FSRSensor** fsrArray, int maxResults) 
     int found = 0;
     for (int i = 0; i < sensorCount_ && found < maxResults; i++) {
         // Check if this sensor's name contains "FSR"
-        if (strstr(sensors_[i]->getName(), "FSR") != nullptr) {
+        if (strstr(sensors_[i]->getName(), "fsr") != nullptr) {
             fsrArray[found] = static_cast<FSRSensor*>(sensors_[i]);
             found++;
         }
@@ -97,7 +98,7 @@ int SimpleSensorManager::getAllIMUSensors(MPU6050Sensor** imuArray, int maxResul
     int found = 0;
     for (int i = 0; i < sensorCount_ && found < maxResults; i++) {
         // Check if this sensor's name contains "IMU"
-        if (strstr(sensors_[i]->getName(), "IMU") != nullptr) {
+        if (strstr(sensors_[i]->getName(), "imu") != nullptr) {
             imuArray[found] = static_cast<MPU6050Sensor*>(sensors_[i]);
             found++;
         }
@@ -129,7 +130,7 @@ void SimpleSensorManager::printAllSensorData() const {
                 Serial.print("  ");
                 Serial.print(fsrSensors[i]->getName());
                 Serial.print(": ");
-                Serial.print(data.force, 3);
+                Serial.print(data.weight, 3);
                 Serial.print(" (");
                 Serial.print(data.rawValue);
                 Serial.print(")");
