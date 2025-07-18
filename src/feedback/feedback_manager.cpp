@@ -84,15 +84,15 @@ void FeedbackManager::updatePattern() {
 
     switch (currentPattern_) {
         case FeedbackPattern::GOOD_BRACE:
-            if (elapsedTime < 150) { // Pulse 1
-                for (auto& motor : motors_) motor->buzz();
-            } else if (elapsedTime < 250) { // Gap 1
-                // for (auto& motor : motors_) motor->stop();
-            } else if (elapsedTime < 400) { // Pulse 2
-                for (auto& motor : motors_) motor->buzz();
-            } else {
-                stopPattern();
-            }
+            // if (elapsedTime < 150) { // Pulse 1
+            //     for (auto& motor : motors_) motor->buzz();
+            // } else if (elapsedTime < 250) { // Gap 1
+            //     // for (auto& motor : motors_) motor->stop();
+            // } else if (elapsedTime < 400) { // Pulse 2
+            //     for (auto& motor : motors_) motor->buzz();
+            // } else {
+            //     stopPattern();
+            // }
             break;
         
         
