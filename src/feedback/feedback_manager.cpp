@@ -6,6 +6,16 @@ void FeedbackManager::addMotor(std::unique_ptr<IMotor> motor) {
     motors_.push_back(std::move(motor));
 }
 
+void FeedbackManager::addLED(std::unique_ptr<LED> led) {
+    if (led->getType() == LEDS::IDLE) {
+        leds_[0] = std::move(led);
+    } else if (led->getType() == LEDS::CALIBRATING) {
+        leds_[1] = std::move(led);
+    } else if (led->getType() == LEDS::READY) {
+        leds_[2] = std::move(led);
+    }
+}
+
 bool FeedbackManager::initializeAll() {
     Serial.println("Initializing all motors...");
     for (auto& motor : motors_) {
@@ -14,7 +24,17 @@ bool FeedbackManager::initializeAll() {
             return false;
         }
     }
+
     Serial.println("All motors initialized successfully");
+
+    for (auto& led : leds_) {
+        if (!led->initialize()) {
+            Serial.println("Failed to initialize LED");
+            return false;
+        }
+    }
+
+    Serial.println("All LEDS initialized successfully");
     return true;
 }
 
@@ -99,6 +119,8 @@ void FeedbackManager::updatePattern() {
 
         case FeedbackPattern::POOR_BRACE:
             Serial.println("FeedbackPattern::POOR_BRACE");
+            leds_[2]->flash();
+            
             for (auto& motor : motors_) {
                 Serial.println("Motors buzzing!");
                 motor->buzz();
@@ -119,6 +141,7 @@ void FeedbackManager::updatePattern() {
             break;
 
         case FeedbackPattern::CALIBRATION:
+            leds_[1]->flash();
             if ((elapsedTime / 500) % 2 == 0) { // 500ms on, 500ms off
                 for (auto& motor : motors_) motor->buzz();
             } else {

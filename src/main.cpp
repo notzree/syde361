@@ -23,6 +23,12 @@
 #define MAIN_BUTTON_PIN D2
 #define CALIBRATION_BUTTON_PIN D3
 
+
+// -- IMPORTANT!!! Change to whichever pin the leds are actually in --
+#define IDLE_LED_PIN D7
+#define READY_LED_PIN D8
+#define CALIBRATION_LED_PIN D9
+
 // --- Global Variables ---
 std::unique_ptr<BeltFSM> beltFsm;
 
@@ -45,8 +51,16 @@ void setup() {
   sensorManager->addSensor(imu1.release());
   
   auto motor1 = std::unique_ptr<VibrationMotor>(new VibrationMotor("motor1", MOTOR_PIN_1));
-
   feedbackManager->addMotor(std::move(motor1));
+
+  auto idleLED = std::unique_ptr<LED>(new LED(LEDS::IDLE, IDLE_LED_PIN));
+  feedbackManager->addLED(std::move(idleLED));
+
+  auto readyLED = std::unique_ptr<LED>(new LED(LEDS::READY, READY_LED_PIN));
+  feedbackManager->addLED(std::move(readyLED));
+
+  auto calibrationLED = std::unique_ptr<LED>(new LED(LEDS::CALIBRATING, CALIBRATION_LED_PIN));
+  feedbackManager->addLED(std::move(calibrationLED));
 
   inputManager->addButton("main_button", MAIN_BUTTON_PIN);
   inputManager->addButton("calibration_button", CALIBRATION_BUTTON_PIN);
