@@ -113,12 +113,14 @@ BeltEvent BeltFSM::checkForEvents() {
                 return BeltEvent::GOOD_BRACE_DETECTED;
             }
             if (isPoorBraceDetected()) {
+                Serial.println("poor bad");
                 return BeltEvent::POOR_BRACE_DETECTED;
             }
             break;
             
         case BeltState::FEEDBACK_GOOD:
         case BeltState::FEEDBACK_BAD:
+            Serial.println("feedback bad");
             if (feedbackManager_->isPatternComplete()) {
                 return BeltEvent::FEEDBACK_COMPLETE;
             }
@@ -149,6 +151,7 @@ void BeltFSM::handleEvent(BeltEvent event) {
             break;
         case BeltState::FEEDBACK_GOOD:
         case BeltState::FEEDBACK_BAD:
+            // feedbackManager_->startPattern()
             handleFeedbackState(event);
             break;
     }
@@ -188,6 +191,7 @@ void BeltFSM::enterState(BeltState state) {
             
         case BeltState::FEEDBACK_BAD:
             feedbackStartTime_ = millis();
+            Serial.println("feedback_bad start pattern");
             feedbackManager_->startPattern(FeedbackPattern::POOR_BRACE);
             break;
             

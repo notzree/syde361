@@ -20,6 +20,7 @@ bool FeedbackManager::initializeAll() {
 
 void FeedbackManager::update() {
     if (patternActive_) {
+        Serial.println("Pattern updating");
         updatePattern();
     }
 }
@@ -43,6 +44,7 @@ bool FeedbackManager::isPatternComplete() {
             duration = 400; // 2 short pulses (150ms on, 100ms gap) = 400ms
             break;
         case FeedbackPattern::POOR_BRACE:
+            Serial.println("poor brace");
             duration = 1050; // 3 long pulses (250ms on, 150ms gap) = 1050ms
             break;
         case FeedbackPattern::CALIBRATION:
@@ -78,6 +80,7 @@ void FeedbackManager::updatePattern() {
 
     unsigned long currentTime = millis();
     unsigned long elapsedTime = currentTime - patternStartTime_;
+    Serial.println("in switch case");
 
     switch (currentPattern_) {
         case FeedbackPattern::GOOD_BRACE:
@@ -91,21 +94,28 @@ void FeedbackManager::updatePattern() {
                 stopPattern();
             }
             break;
+        
+        
 
         case FeedbackPattern::POOR_BRACE:
-            if (elapsedTime < 250) { // Pulse 1
-                for (auto& motor : motors_) motor->buzz();
-            } else if (elapsedTime < 400) { // Gap 1
-                // for (auto& motor : motors_) motor->stop();
-            } else if (elapsedTime < 650) { // Pulse 2
-                for (auto& motor : motors_) motor->buzz();
-            } else if (elapsedTime < 800) { // Gap 2
-                // for (auto& motor : motors_) motor->stop();
-            } else if (elapsedTime < 1050) { // Pulse 3
-                for (auto& motor : motors_) motor->buzz();
-            } else {
-                stopPattern();
+            Serial.println("FeedbackPattern::POOR_BRACE");
+            for (auto& motor : motors_) {
+                Serial.println("Motors buzzing!");
+                motor->buzz();
             }
+            // if (elapsedTime < 250) { // Pulse 1
+            //     for (auto& motor : motors_) motor->buzz();
+            // } else if (elapsedTime < 400) { // Gap 1
+            //     // for (auto& motor : motors_) motor->stop();
+            // } else if (elapsedTime < 650) { // Pulse 2
+            //     for (auto& motor : motors_) motor->buzz();
+            // } else if (elapsedTime < 800) { // Gap 2
+            //     // for (auto& motor : motors_) motor->stop();
+            // } else if (elapsedTime < 1050) { // Pulse 3
+            //     for (auto& motor : motors_) motor->buzz();
+            // } else {
+            //     stopPattern();
+            // }
             break;
 
         case FeedbackPattern::CALIBRATION:

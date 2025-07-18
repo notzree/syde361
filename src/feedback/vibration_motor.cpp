@@ -11,8 +11,10 @@ bool VibrationMotor::initialize() {
 
 void VibrationMotor::buzz() const {
     // A simple 150ms buzz pattern
+    Serial.println("vibrationMotor");
+    Serial.println(pin_);
     digitalWrite(pin_, HIGH);
-    delay(150);
+    delay(500);
     digitalWrite(pin_, LOW);
 }
 
