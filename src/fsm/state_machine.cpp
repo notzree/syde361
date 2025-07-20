@@ -336,7 +336,7 @@ void BeltFSM::startCalibration() {
     
     // Collect baseline samples
     const int CALIBRATION_SAMPLES = 100;
-    const int SAMPLE_DELAY = 50; // ms between samples
+    const int SAMPLE_DELAY = 25; // ms between samples
     
     Serial.println("Collecting baseline samples...");
     

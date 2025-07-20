@@ -168,11 +168,15 @@ void FeedbackManager::updatePattern() {
 
         case FeedbackPattern::CALIBRATION:
             leds_[1]->flash();
-            if ((elapsedTime / 500) % 2 == 0) { // 500ms on, 500ms off
-                for (auto& motor : motors_) motor->buzz();
-            } else {
-                // for (auto& motor : motors_) motor->stop();
+            for (auto& motor: motors_) {
+                Serial.print(motor->getName());
+                motor->buzz();
             }
+            // if ((elapsedTime / 500) % 2 == 0) { // 500ms on, 500ms off
+            //     for (auto& motor : motors_) motor->buzz();
+            // } else {
+            //     // for (auto& motor : motors_) motor->stop();
+            // }
             break;
 
         case FeedbackPattern::ERROR:

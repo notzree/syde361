@@ -21,7 +21,7 @@
 #define MOTOR_PIN_1 D6
 
 #define MAIN_BUTTON_PIN D2
-#define CALIBRATION_BUTTON_PIN D3
+#define CALIBRATION_BUTTON_PIN D4
 
 
 // -- IMPORTANT!!! Change to whichever pin the leds are actually in --
