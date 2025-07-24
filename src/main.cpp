@@ -10,7 +10,6 @@
 #include "sensors/fsr_sensor.h"
 #include "feedback/vibration_motor.h"
 
-
 // --- Configuration ---
 #define FSR_PIN_1 A0
 // #define FSR_PIN_2 A1
@@ -23,7 +22,6 @@
 #define MAIN_BUTTON_PIN D2
 #define CALIBRATION_BUTTON_PIN D4
 
-
 // -- IMPORTANT!!! Change to whichever pin the leds are actually in --
 #define IDLE_LED_PIN D7
 #define READY_LED_PIN D8
@@ -32,9 +30,11 @@
 // --- Global Variables ---
 std::unique_ptr<BeltFSM> beltFsm;
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
-  while (!Serial);
+  // while (!Serial)
+  // ;
   Serial.println("Smart Belt Booting Up...");
 
   auto sensorManager = std::unique_ptr<SimpleSensorManager>(new SimpleSensorManager());
@@ -46,7 +46,7 @@ void setup() {
 
   auto imu1 = std::unique_ptr<MPU6050Sensor>(new MPU6050Sensor("imu1"));
   sensorManager->addSensor(imu1.release());
-  
+
   auto motor1 = std::unique_ptr<VibrationMotor>(new VibrationMotor("motor1", MOTOR_PIN_1));
   feedbackManager->addMotor(std::move(motor1));
 
@@ -61,18 +61,17 @@ void setup() {
 
   inputManager->addButton("main_button", MAIN_BUTTON_PIN);
   inputManager->addButton("calibration_button", CALIBRATION_BUTTON_PIN);
-  
+
   beltFsm = std::unique_ptr<BeltFSM>(new BeltFSM(
       std::move(sensorManager),
       std::move(feedbackManager),
-      std::move(inputManager)
-  ));
+      std::move(inputManager)));
 
- 
-
-  if (!beltFsm->initialize()) {
+  if (!beltFsm->initialize())
+  {
     Serial.println("FATAL: Failed to initialize Belt FSM. System halted.");
-    while (true) {
+    while (true)
+    {
       delay(1000);
     }
   }
@@ -80,9 +79,11 @@ void setup() {
   Serial.println("\n--- System Ready! Starting main loop. ---");
 }
 
-void loop() {
-  if (beltFsm) {
+void loop()
+{
+  if (beltFsm)
+  {
     beltFsm->update();
   }
-  delay(10); 
+  delay(10);
 }
