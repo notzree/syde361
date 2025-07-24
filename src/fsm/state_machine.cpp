@@ -563,9 +563,8 @@ bool BeltFSM::isGoodBraceDetected() const
 
     FSRSensor *fsrSensors[5];
     int fsrCount = sensorManager_->getAllFSRSensors(fsrSensors, 5);
-
-    // Sum total brace pressure
     float totalPressure = 0;
+
     for (int i = 0; i < fsrCount; i++)
     {
         totalPressure += fsrSensors[i]->getData().weight;
@@ -579,56 +578,33 @@ bool BeltFSM::isGoodBraceDetected() const
     int imuCount = sensorManager_->getAllIMUSensors(imuSensors, 3);
 
     bool isBending = false;
-    bool uprightAlignment = true;
+    bool inDangerPosture = false;
 
     for (int i = 0; i < imuCount; i++)
     {
         float pitch = imuSensors[i]->getPitch() - baseline_.imuBaselines[i][1];
         float roll = imuSensors[i]->getRoll() - baseline_.imuBaselines[i][0];
 
-        if (abs(pitch) > BeltConfig::BEND_PITCH_THRESHOLD)
+        Serial.print("Pitch: ");
+        Serial.println(abs(pitch));
+        Serial.print("Roll: ");
+        Serial.println(abs(roll));
+
+        if (abs(pitch) > BeltConfig::BEND_PITCH_THRESHOLD || abs(roll) > BeltConfig::ROLL_THRESHOLD)
             isBending = true;
 
-        if (abs(pitch) > BeltConfig::ROLL_THRESHOLD || abs(roll) > BeltConfig::ROLL_THRESHOLD)
-            uprightAlignment = false;
+        if (abs(pitch) > BeltConfig::DANGER_PITCH_THRESHOLD || abs(roll) > BeltConfig::DANGER_ROLL_THRESHOLD)
+            inDangerPosture = true;
     }
 
-    // Upright with no brace
-    if (!isBending && totalPressure < BeltConfig::MIN_ENGAGEMENT_PRESSURE)
-    {
-        Serial.println("No lifting motion detected.");
-        return false;
-    }
-
-    // Upright with brace
-    if (totalPressure >= BeltConfig::MIN_ENGAGEMENT_PRESSURE)
+    // Only valid good brace condition: bending, enough pressure, and not in danger zone
+    if (isBending && totalPressure >= BeltConfig::MIN_ENGAGEMENT_PRESSURE && !inDangerPosture)
     {
         Serial.println("Good brace detected!");
-        return false;
+        return true;
     }
 
-    // Bending and misaligned posture
-    if (!uprightAlignment)
-    {
-        Serial.println("IMU out of alignment.");
-        return false;
-    }
-
-    // // Ratio threshold for good brace detection
-    // float braceRatio = totalPressure / (baseline_.fsrBaselines[0] + 1); // Add 1 to avoid divide-by-zero
-    // Serial.print("Brace Ratio: ");
-    // Serial.println(braceRatio);
-
-    // if (braceRatio >= BeltConfig::GOOD_BRACE_RATIO)
-    // {
-    //     Serial.println("Good brace detected!");
-    //     return true;
-    // }
-    // else
-    // {
-    //     Serial.println("Bad brace detected – not enough intra-abdominal pressure.");
-    //     return false;
-    // }
+    return false;
 }
 
 bool BeltFSM::isPoorBraceDetected() const
@@ -636,8 +612,20 @@ bool BeltFSM::isPoorBraceDetected() const
     if (!baseline_.isCalibrated)
         return false;
 
+    FSRSensor *fsrSensors[5];
+    int fsrCount = sensorManager_->getAllFSRSensors(fsrSensors, 5);
+    float totalPressure = 0;
+
+    for (int i = 0; i < fsrCount; i++)
+    {
+        totalPressure += fsrSensors[i]->getData().weight;
+    }
+
     MPU6050Sensor *imuSensors[3];
     int imuCount = sensorManager_->getAllIMUSensors(imuSensors, 3);
+
+    bool isBending = false;
+    bool inDangerPosture = false;
 
     for (int i = 0; i < imuCount; i++)
     {
@@ -654,8 +642,19 @@ bool BeltFSM::isPoorBraceDetected() const
             Serial.println(roll);
             return true;
         }
+
+        if (pitch > BeltConfig::BEND_PITCH_THRESHOLD || roll > BeltConfig::ROLL_THRESHOLD)
+            isBending = true;
     }
 
+    // ✅ Only return bad brace if bending + low pressure
+    if (isBending && totalPressure < BeltConfig::MIN_ENGAGEMENT_PRESSURE)
+    {
+        Serial.println("Bad brace detected (not enough pressure during bend).");
+        return true;
+    }
+
+    // ✅ Else: bending but now enough pressure = no poor brace
     return false;
 }
 

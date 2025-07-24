@@ -19,10 +19,10 @@ namespace BeltConfig
     // Thresholds for detection algorithms
     const float GOOD_DISTRIBUTION_THRESHOLD = 0.15; // Low variance for even distribution
     const float ASYMMETRY_THRESHOLD = 0.3;          // Max acceptable left/right asymmetry
-    const float PITCH_THRESHOLD = 15.0;             // Degrees from neutral
-    const float ROLL_THRESHOLD = 10.0;              // Degrees from neutral
-    const float DANGER_PITCH_THRESHOLD = 20.0;      // Dangerous side lean
-    const float DANGER_ROLL_THRESHOLD = 60.0;       // Dangerous forward/back lean
+    const float PITCH_THRESHOLD = 8.0;              // Degrees from neutral
+    const float ROLL_THRESHOLD = 15.0;              // Degrees from neutral
+    const float DANGER_PITCH_THRESHOLD = 10.0;      // Dangerous side lean
+    const float DANGER_ROLL_THRESHOLD = 50.0;       // Dangerous forward/back lean
     const float GOOD_BRACE_RATIO = 1.2;             // Pressure must be 150% of baseline
     const float BEND_PITCH_THRESHOLD = 15.0;
     const float MIN_ENGAGEMENT_WEIGHT = 10.0; // Minimum weight to consider engaged
@@ -42,7 +42,7 @@ namespace BeltConfig
     constexpr int BRACE_SAMPLES = 50;
     constexpr float BRACE_THRESHOLD = 0.8f;
 
-    static const float MIN_ENGAGEMENT_PRESSURE = 300;
+    static const float MIN_ENGAGEMENT_PRESSURE = 600;
 
     // Need to update these, not sure if they make sense
     constexpr int CALIBRATION_SAMPLE_INTERVAL = 10;
